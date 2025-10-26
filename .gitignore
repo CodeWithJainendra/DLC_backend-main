@@ -46,9 +46,9 @@ out.json
 
 # Large sample data
 static_data/**/*.xlsx
-
-
+ 
 EXCEL_DATA/
+EXCEL_DATA/EXCEL_DATA/
 
 pensioner_data_analysis_*.xlsx
 DLCServer/**/*.xlsx
@@ -59,4 +59,3 @@ updated_db/*.db
 manual_lcs_data/
 updated_db/*.xlsx
 updated_db/mapping.json
-

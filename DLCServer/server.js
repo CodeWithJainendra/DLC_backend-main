@@ -5733,33 +5733,9 @@ app.get('/api/bank-analysis', async (req, res) => {
 app.get('/api/top-banks', async (req, res) => {
     const { limit = 10 } = req.query;
 
-    const query = `
-        WITH bank_totals AS (
-            SELECT bank_name, SUM(age_less_than_80 + age_more_than_80 + age_not_available) as total
-            FROM bank_pensioner_data WHERE bank_name IS NOT NULL AND bank_name != ''
-            GROUP BY bank_name
-            UNION ALL
-            SELECT bank_name, COUNT(*) as total
-            FROM ubi1_pensioner_data WHERE bank_name IS NOT NULL AND bank_name != ''
-            GROUP BY bank_name
-            UNION ALL
-            SELECT bank_name, COUNT(*) as total
-            FROM ubi3_pensioner_data WHERE bank_name IS NOT NULL AND bank_name != ''
-            GROUP BY bank_name
-            UNION ALL
-            SELECT branch_name as bank_name, COUNT(*) as total
-            FROM doppw_pensioner_data WHERE branch_name IS NOT NULL AND branch_name != ''
-            GROUP BY branch_name
-        )
-        SELECT 
-            bank_name,
-            SUM(total) as total_verified_pensioners,
-            RANK() OVER (ORDER BY SUM(total) DESC) as rank_position
-        FROM bank_totals
-        GROUP BY bank_name
-        ORDER BY total_verified_pensioners DESC
-        LIMIT ?
-    `;
+    const top_banks_query = `select Bank_name, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
+(count(LC_date)/count(*))*100 as completion_ratio
+from all_pensioners where bank_name is not null GROUP by bank_name order by completion_ratio desc limit 5`;
 
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
@@ -5770,10 +5746,10 @@ app.get('/api/top-banks', async (req, res) => {
             }
         });
     };
-
+console.log(top_banks_query)
     try {
         const rows = await new Promise((resolve, reject) => {
-            db.all(query, [parseInt(limit)], (err, rows) => {
+            db.all(top_banks_query, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -6318,50 +6294,18 @@ app.get('/api/choropleth/state-verification-data', async (req, res) => {
 
                         return {
                             ...state,
-                            top_banks: topBanks,
-                            filters_applied: {
-                                age_category: age_category || 'all',
-                                bank_name: bank_name || 'all',
-                                pension_type: pension_type || 'all'
-                            }
+                            top_banks: topBanks
                         };
                     } catch (error) {
                         return {
                             ...state,
-                            top_banks: [],
-                            filters_applied: {
-                                age_category: age_category || 'all',
-                                bank_name: bank_name || 'all',
-                                pension_type: pension_type || 'all'
-                            }
+                            top_banks: []
                         };
                     }
                 })
             );
         }
 
-        // Get national summary statistics
-        const summaryQuery = `
-            SELECT 
-                COUNT(DISTINCT UPPER(TRIM(pensioner_state))) as total_states_doppw,
-                COUNT(DISTINCT branch_name) as total_banks_doppw,
-                COUNT(*) as total_records_doppw,
-                COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) as total_verified_doppw
-            FROM doppw_pensioner_data
-            WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                AND branch_name IS NOT NULL AND branch_name != 'nan' AND branch_name != ''
-        `;
-
-        const nationalSummary = await new Promise((resolve, reject) => {
-            db.get(summaryQuery, [], (err, row) => {
-                if (err) {
-                    console.warn('National summary query error:', err.message);
-                    resolve({});
-                } else {
-                    resolve(row || {});
-                }
-            });
-        });
 
         // Format enhanced data for choropleth map
         const choroplethData = stateData.map(state => ({
@@ -8489,170 +8433,19 @@ app.get('/api/choropleth/top-banks-analysis', async (req, res) => {
 
         // Get top banks from bank_pensioner_data
         let topBanksQuery = `
-            SELECT 
-                bank_name,
-                bank_state,
-                COUNT(*) as branch_count,
-                SUM(COALESCE(grand_total, 0)) as total_pensioners,
-                SUM(COALESCE(age_less_than_80, 0)) as pensioners_under_80,
-                SUM(COALESCE(age_more_than_80, 0)) as pensioners_over_80,
-                SUM(COALESCE(age_not_available, 0)) as pensioners_age_unknown,
-                ROUND(AVG(COALESCE(grand_total, 0)), 2) as avg_pensioners_per_branch
-            FROM bank_pensioner_data 
-            WHERE bank_name IS NOT NULL 
-            AND bank_state IS NOT NULL
-            AND grand_total > 0
+            select Bank_name, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
+(count(LC_date)/count(*))*100 as completion_ratio
+from all_pensioners where bank_name is Not null and bank_name != 'null' GROUP by bank_name order by completion_ratio desc limit 5
         `;
 
-        if (stateFilter) {
-            topBanksQuery += ` AND UPPER(bank_state) LIKE UPPER(?)`;
-        }
-
-        topBanksQuery += `
-            GROUP BY bank_name, bank_state
-            ORDER BY total_pensioners DESC
-            LIMIT ?
-        `;
-
-        const topBanksParams = stateFilter ? [...stateParams, parseInt(limit)] : [parseInt(limit)];
-        const topBanks = await new Promise((resolve, reject) => {
-            db.all(topBanksQuery, topBanksParams, (err, rows) => {
+            const topBanks = await new Promise((resolve, reject) => {
+            db.all(topBanksQuery, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
                     resolve(rows || []);
                 }
             });
-        });
-
-        // Get overall top banks (across all states)
-        const overallTopBanksQuery = `
-            SELECT 
-                bank_name,
-                COUNT(DISTINCT bank_state) as states_present,
-                COUNT(*) as total_branches,
-                SUM(COALESCE(grand_total, 0)) as total_pensioners,
-                ROUND(AVG(COALESCE(grand_total, 0)), 2) as avg_pensioners_per_branch
-            FROM bank_pensioner_data 
-            WHERE bank_name IS NOT NULL 
-            AND grand_total > 0
-            GROUP BY bank_name
-            ORDER BY total_pensioners DESC
-            LIMIT ?
-        `;
-
-        const overallTopBanks = await new Promise((resolve, reject) => {
-            db.all(overallTopBanksQuery, [parseInt(limit)], (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows || []);
-                }
-            });
-        });
-
-        // Get state-wise summary
-        let stateSummaryQuery = `
-            SELECT 
-                bank_state,
-                COUNT(DISTINCT bank_name) as unique_banks,
-                COUNT(*) as total_branches,
-                SUM(COALESCE(grand_total, 0)) as total_pensioners
-            FROM bank_pensioner_data 
-            WHERE bank_state IS NOT NULL 
-            AND grand_total > 0
-        `;
-
-        if (stateFilter) {
-            stateSummaryQuery += ` AND UPPER(bank_state) LIKE UPPER(?)`;
-        }
-
-        stateSummaryQuery += `
-            GROUP BY bank_state
-            ORDER BY total_pensioners DESC
-        `;
-
-        const stateSummaryParams = stateFilter ? stateParams : [];
-        const stateSummary = await new Promise((resolve, reject) => {
-            db.all(stateSummaryQuery, stateSummaryParams, (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows || []);
-                }
-            });
-        });
-
-        // Get branch details if requested
-        let branchDetails = [];
-        if (include_branches === 'true' && topBanks.length > 0) {
-            const topBankNames = topBanks.slice(0, 5).map(bank => bank.bank_name);
-            const placeholders = topBankNames.map(() => '?').join(',');
-
-            let branchQuery = `
-                SELECT 
-                    bank_name,
-                    bank_state,
-                    bank_city,
-                    bank_ifsc,
-                    branch_pin_code,
-                    grand_total as pensioners
-                FROM bank_pensioner_data 
-                WHERE bank_name IN (${placeholders})
-                ${state_filter ? 'AND UPPER(bank_state) LIKE UPPER(?)' : ''}
-                AND grand_total > 0
-                ORDER BY bank_name, grand_total DESC
-                LIMIT 100
-            `;
-
-            const branchParams = [...topBankNames];
-            if (state_filter && state_filter !== 'all') {
-                branchParams.push(`%${state_filter}%`);
-            }
-
-            branchDetails = await new Promise((resolve, reject) => {
-                db.all(branchQuery, branchParams, (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows || []);
-                    }
-                });
-            });
-        }
-
-        // Calculate summary statistics
-        const totalPensioners = topBanks.reduce((sum, bank) => sum + bank.total_pensioners, 0);
-        const totalBranches = topBanks.reduce((sum, bank) => sum + bank.branch_count, 0);
-
-        res.json({
-            success: true,
-            message: "Top banks analysis for choropleth state verification data",
-            filters_applied: {
-                state_filter: state_filter || 'all',
-                limit: parseInt(limit),
-                include_branches: include_branches === 'true'
-            },
-            top_banks_by_state: topBanks,
-            overall_top_banks: overallTopBanks,
-            state_wise_summary: stateSummary,
-            branch_details: branchDetails,
-            summary: {
-                total_banks_shown: topBanks.length,
-                total_pensioners_in_results: totalPensioners,
-                total_branches_in_results: totalBranches,
-                states_covered: stateSummary.length,
-                avg_pensioners_per_bank: totalPensioners > 0 ? Math.round(totalPensioners / topBanks.length) : 0
-            },
-            data_source: 'bank_pensioner_data',
-            api_usage_examples: {
-                all_states: '/api/choropleth/top-banks-analysis',
-                specific_state: '/api/choropleth/top-banks-analysis?state_filter=Maharashtra',
-                with_branches: '/api/choropleth/top-banks-analysis?include_branches=true',
-                top_5_banks: '/api/choropleth/top-banks-analysis?limit=5',
-                combined: '/api/choropleth/top-banks-analysis?state_filter=Uttar Pradesh&limit=15&include_branches=true'
-            },
-            timestamp: new Date().toISOString()
         });
 
     } catch (error) {

@@ -591,10 +591,7 @@ async function getDashboardStats() {
     }
 }
 
-/**
- * Get top 7 states by number of verified pensioners
- * @returns {Array} Array of states with verification counts
- */
+
 async function getTopStatesByVerifiedPensioners(limit) {
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
@@ -608,116 +605,43 @@ async function getTopStatesByVerifiedPensioners(limit) {
 
     try {
         // Use only all_pensioners for both totals and verified (LC_date)
-        const allStateCol = 'state';
+        
+            const query = `select State, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
+(count(LC_date)/count(*))*100 as completion_ratio
+from all_pensioners where state is Not null and State != 'null' GROUP by state order by completion_ratio desc limit 5`;
 
-        // Normalize and alias states: remove non-letters, merge common variants
-        const normalizeState = (s) => {
-            if (!s) return '';
-            const raw = String(s).trim().toUpperCase();
-            if (raw === '' || raw === 'NAN' || raw === 'UNKNOWN' || raw === 'NULL') return '';
-            const compact = raw.replace(/[^A-Z]/g, '');
-            const aliases = {
-                'NCTOFDELHI': 'DELHI',
-                'NEWDELHI': 'DELHI',
-                'UTTARPRADESH': 'UTTAR PRADESH',
-                'MADHYAPRADESH': 'MADHYA PRADESH',
-                'ANDHRAPRADESH': 'ANDHRA PRADESH',
-                'ANDRAPRADESH': 'ANDHRA PRADESH',
-                'TAMILNADU': 'TAMIL NADU',
-                'WESTBENGAL': 'WEST BENGAL',
-                'DAMANDIU': 'DAMAN AND DIU',
-                'DADRAANDNAGARHAVELIANDDAMANANDDIU': 'DADRA AND NAGAR HAVELI AND DAMAN AND DIU',
-                'UTTARANCHAL': 'UTTARAKHAND',
-                'LAKHSWADEEP': 'LAKSHADWEEP',
-                'CHATTISGARH': 'CHHATTISGARH',
-                'JHARAKHAND': 'JHARKHAND'
-            };
-            return aliases[compact] || raw;
-        };
-
-        // Totals per state
-        const allTotals = await new Promise((resolve) => {
-            const query = `
-                SELECT 
-                    ${allStateCol} AS state,
-                    COUNT(*) AS total_pensioners
-                FROM all_pensioners
-                WHERE ${allStateCol} IS NOT NULL 
-                  AND ${allStateCol} != ''
-                  AND UPPER(${allStateCol}) != 'NAN'
-                GROUP BY ${allStateCol}
-            `;
+            console.log(query)
+             const rows = await new Promise((resolve, reject) => {
             db.all(query, [], (err, rows) => {
                 if (err) {
-                    console.warn('all_pensioners aggregation failed:', err.message);
-                    resolve([]);
+                    reject(err);
                 } else {
-                    resolve(rows || []);
+                    resolve(rows);
                 }
             });
         });
 
-        // Verified proxy via LC_date
-        const lcVerified = await new Promise((resolve) => {
-            const query = `
-                SELECT 
-                    ${allStateCol} AS state,
-                    COUNT(*) AS verified_count
-                FROM all_pensioners
-                WHERE ${allStateCol} IS NOT NULL 
-                  AND ${allStateCol} != ''
-                  AND UPPER(${allStateCol}) != 'NAN'
-                  AND LC_date IS NOT NULL 
-                  AND TRIM(LC_date) != ''
-                  AND UPPER(LC_date) != 'NAN'
-                GROUP BY ${allStateCol}
-            `;
-            db.all(query, [], (err, rows) => {
-                if (err) {
-                    console.warn('all_pensioners LC_date aggregation failed:', err.message);
-                    resolve([]);
-                } else {
-                    resolve(rows || []);
-                }
-            });
-        });
+        merged = []
+        console.log(rows.length)
 
-        // Build maps
-        const totalsMap = new Map();
-        allTotals.forEach(r => {
-            const key = normalizeState(r.state);
-            if (!key) return; // skip invalid
-            const prev = totalsMap.get(key) || 0;
-            totalsMap.set(key, prev + (r.total_pensioners || 0));
-        });
-        const verifiedMap = new Map();
-        lcVerified.forEach(r => {
-            const key = normalizeState(r.state);
-            if (!key) return; // skip invalid
-            const prev = verifiedMap.get(key) || 0;
-            verifiedMap.set(key, prev + (r.verified_count || 0));
-        });
-
-        // Merge
-        const merged = [];
-        totalsMap.forEach((total, state) => {
-            const verified = verifiedMap.get(state) || 0;
+        rows.forEach(r => {
+     console.log(r)
             merged.push({
-                state,
-                total_pensioners: total,
-                verified_count: verified,
-                verification_rate: total > 0 ? Number(((verified * 100.0) / total).toFixed(2)) : 0,
-                data_sources: ['all_pensioners']
+                state: r.state,
+                total_pensioners: r.all_pensioner_count,
+                verified_count: r.verified_pensioner_count,
+                verification_rate: r.all_pensioner_count > 0 ? Number(((r.verified_pensioner_count * 100.0) / r.all_pensioner_count).toFixed(2)) : 0
+
             });
         });
-
-        // Sort by total pensioners desc
-        merged.sort((a, b) => b.total_pensioners - a.total_pensioners);
-
-        // Apply optional limit; return all if not provided or invalid
-        const n = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Number(limit) : merged.length;
-        return merged.slice(0, n);
-    } finally {
+     
+        return merged;
+    }
+    catch (err) {
+        console.warn('Top states by verified pensioners query failed:', err.message);
+        return [];
+    }
+     finally {
         closeDb();
     }
 }
@@ -8749,6 +8673,7 @@ app.get('/api/choropleth/top-banks-analysis', async (req, res) => {
 
 // Import pincode API routes
 const pincodeApiRouter = require('./pincode-api');
+const { cache } = require('react');
 app.use('/api/pincode', pincodeApiRouter);
 
 // Server already started above - no need for duplicate listen call

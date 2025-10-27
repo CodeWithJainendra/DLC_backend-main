@@ -15,7 +15,11 @@ const geographicRoutes = require('./routes/geographic-routes');
 const app = express();
 const PORT = process.env.PORT || 9007;
 const HOST = '0.0.0.0';
-const DB_PATH = path.join(__dirname, 'database.db');
+// const DB_PATH = path.join(__dirname, 'database.db');
+//TODO: changes
+const DB_PATH = path.join("..", 'updated_db/updated_db.db');
+
+
 
 // JWT Secret (in production, use environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'dlc-portal-jwt-secret-key-2025-secure';
@@ -387,16 +391,28 @@ async function getDashboardStats() {
 
         try {
             // Get comprehensive total pensioners from ALL tables
+            // const queries = [
+            //     // PSA aggregated data
+            //     "SELECT COALESCE(SUM(total_pensioners), 0) as total FROM psa_pensioner_data",
+            //     // Bank aggregated data  
+            //     "SELECT COALESCE(SUM(grand_total), 0) as total FROM bank_pensioner_data",
+            //     // Individual record tables
+            //     "SELECT COUNT(*) as total FROM doppw_pensioner_data",
+            //     "SELECT COUNT(*) as total FROM dot_pensioner_data",
+            //     "SELECT COUNT(*) as total FROM ubi3_pensioner_data",
+            //     "SELECT COUNT(*) as total FROM ubi1_pensioner_data"
+            // ];
+
             const queries = [
                 // PSA aggregated data
-                "SELECT COALESCE(SUM(total_pensioners), 0) as total FROM psa_pensioner_data",
+                "SELECT count(*) as total from all_pensioners",
                 // Bank aggregated data  
-                "SELECT COALESCE(SUM(grand_total), 0) as total FROM bank_pensioner_data",
+                "SELECT 100000",
                 // Individual record tables
-                "SELECT COUNT(*) as total FROM doppw_pensioner_data",
-                "SELECT COUNT(*) as total FROM dot_pensioner_data",
-                "SELECT COUNT(*) as total FROM ubi3_pensioner_data",
-                "SELECT COUNT(*) as total FROM ubi1_pensioner_data"
+                "SELECT 111111 as total from all_pensioners",
+                "SELECT 111111 as total from all_pensioners",
+                "SELECT 111111 as total from all_pensioners",
+                "SELECT 111111 as total from all_pensioners"
             ];
 
             const results = await Promise.all(queries.map(query =>

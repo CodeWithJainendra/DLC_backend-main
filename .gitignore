@@ -61,3 +61,6 @@ updated_db/*.db
 manual_lcs_data/
 updated_db/*.xlsx
 updated_db/mapping.json
+# Ignore local Excel data dumps and large files
+EXCEL_DATA/
+EXCEL_DATA/**

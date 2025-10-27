@@ -434,15 +434,13 @@ async function getDashboardStats() {
         }
 
         try {
+            const dt = new Date().toISOString().slice(0, 10);
+            //TODO: test with real data
             // Get verified today from main verification table
             const verifiedRow = await dbGet(db, `
                 SELECT COUNT(*) AS count
-                FROM doppw_pensioner_data
-                WHERE submitted_status IS NOT NULL
-                  AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED')
-                  AND certificate_submission_date IS NOT NULL
-                  AND DATE(certificate_submission_date) = DATE('now')
-            `);
+                FROM pensioners_live_data
+                WHERE inserted_at = `+ dt)
             verifiedToday = verifiedRow?.count || 0;
         } catch (err) {
             console.warn('Dashboard stats: failed to compute verified today -', err.message);
@@ -451,87 +449,36 @@ async function getDashboardStats() {
         try {
             // Get comprehensive verification status from main table
             const statusRow = await dbGet(db, `
-                SELECT
-                    COUNT(*) AS total_records,
-                    SUM(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 ELSE 0 END) AS verified_count,
-                    SUM(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 ELSE 0 END) AS pending_count
-                FROM doppw_pensioner_data
+                    SELECT count(*) as verified_count from pensioners_live_data
             `);
             totalVerified = statusRow?.verified_count || 0;
-            pendingQueue = statusRow?.pending_count || 0;
+            pendingQueue = totalPensioners - totalVerified;
         } catch (err) {
             console.warn('Dashboard stats: failed to compute summary stats -', err.message);
         }
 
         try {
             // Get comprehensive age distribution from all tables with age data
-            const ageQueries = [
-                `SELECT 
-                    SUM(CASE WHEN age < 60 THEN 1 ELSE 0 END) AS age_under_60,
-                    SUM(CASE WHEN age >= 60 AND age < 70 THEN 1 ELSE 0 END) AS age_60_70,
-                    SUM(CASE WHEN age >= 70 AND age < 80 THEN 1 ELSE 0 END) AS age_70_80,
-                    SUM(CASE WHEN age >= 80 AND age < 90 THEN 1 ELSE 0 END) AS age_80_90,
-                    SUM(CASE WHEN age >= 90 THEN 1 ELSE 0 END) AS age_90_plus
-                FROM doppw_pensioner_data WHERE age IS NOT NULL`,
+            const currentYear = new Date().getFullYear();
+            const ageQuery = `
+                SELECT 
+                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) < 60 THEN 1 ELSE 0 END) AS age_under_60,
+                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS age_60_70,
+                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 70 AND 79 THEN 1 ELSE 0 END) AS age_70_80,
+                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 80 AND 89 THEN 1 ELSE 0 END) AS age_80_90,
+                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) >= 90 THEN 1 ELSE 0 END) AS age_90_plus
+                FROM all_pensioners 
+                WHERE YOB IS NOT NULL 
+                  AND CAST(YOB AS INTEGER) BETWEEN 1900 AND ${currentYear}
+            `;
 
-                `SELECT 
-                    SUM(CASE WHEN age < 60 THEN 1 ELSE 0 END) AS age_under_60,
-                    SUM(CASE WHEN age >= 60 AND age < 70 THEN 1 ELSE 0 END) AS age_60_70,
-                    SUM(CASE WHEN age >= 70 AND age < 80 THEN 1 ELSE 0 END) AS age_70_80,
-                    SUM(CASE WHEN age >= 80 AND age < 90 THEN 1 ELSE 0 END) AS age_80_90,
-                    SUM(CASE WHEN age >= 90 THEN 1 ELSE 0 END) AS age_90_plus
-                FROM dot_pensioner_data WHERE age IS NOT NULL`,
+            const ageResults = await dbGet(db, ageQuery);
+            ageDistribution['<60 Years'] = ageResults?.age_under_60 || 0;
+            ageDistribution['60-70 Years'] = ageResults?.age_60_70 || 0;
+            ageDistribution['70-80 Years'] = ageResults?.age_70_80 || 0;
+            ageDistribution['80-90 Years'] = ageResults?.age_80_90 || 0;
+            ageDistribution['90+ Years'] = ageResults?.age_90_plus || 0;
 
-                `SELECT 
-                    SUM(CASE WHEN age < 60 THEN 1 ELSE 0 END) AS age_under_60,
-                    SUM(CASE WHEN age >= 60 AND age < 70 THEN 1 ELSE 0 END) AS age_60_70,
-                    SUM(CASE WHEN age >= 70 AND age < 80 THEN 1 ELSE 0 END) AS age_70_80,
-                    SUM(CASE WHEN age >= 80 AND age < 90 THEN 1 ELSE 0 END) AS age_80_90,
-                    SUM(CASE WHEN age >= 90 THEN 1 ELSE 0 END) AS age_90_plus
-                FROM ubi3_pensioner_data WHERE age IS NOT NULL`,
-
-                `SELECT 
-                    SUM(CASE WHEN age < 60 THEN 1 ELSE 0 END) AS age_under_60,
-                    SUM(CASE WHEN age >= 60 AND age < 70 THEN 1 ELSE 0 END) AS age_60_70,
-                    SUM(CASE WHEN age >= 70 AND age < 80 THEN 1 ELSE 0 END) AS age_70_80,
-                    SUM(CASE WHEN age >= 80 AND age < 90 THEN 1 ELSE 0 END) AS age_80_90,
-                    SUM(CASE WHEN age >= 90 THEN 1 ELSE 0 END) AS age_90_plus
-                FROM ubi1_pensioner_data WHERE age IS NOT NULL`
-            ];
-
-            const ageResults = await Promise.all(ageQueries.map(query =>
-                new Promise((resolve) => {
-                    db.get(query, [], (err, row) => {
-                        if (err) {
-                            console.warn(`Age query failed: ${query}`, err.message);
-                            resolve({
-                                age_under_60: 0,
-                                age_60_70: 0,
-                                age_70_80: 0,
-                                age_80_90: 0,
-                                age_90_plus: 0
-                            });
-                        } else {
-                            resolve(row || {
-                                age_under_60: 0,
-                                age_60_70: 0,
-                                age_70_80: 0,
-                                age_80_90: 0,
-                                age_90_plus: 0
-                            });
-                        }
-                    });
-                })
-            ));
-
-            // Aggregate age data from all tables
-            ageResults.forEach(result => {
-                ageDistribution['<60 Years'] += result.age_under_60 || 0;
-                ageDistribution['60-70 Years'] += result.age_60_70 || 0;
-                ageDistribution['70-80 Years'] += result.age_70_80 || 0;
-                ageDistribution['80-90 Years'] += result.age_80_90 || 0;
-                ageDistribution['90+ Years'] += result.age_90_plus || 0;
-            });
 
         } catch (err) {
             console.warn('Dashboard stats: failed to compute age distribution -', err.message);
@@ -564,26 +511,25 @@ async function getDashboardStats() {
 
         try {
             // Get submission mode breakdown from doppw_pensioner_data
-            const submissionRow = await dbGet(db, `
-                SELECT 
-                    submission_mode,
+            submissionTypeQuery = `
+                SELECT pensioner_DLC_type as submission_mode
                     COUNT(*) as count
-                FROM doppw_pensioner_data 
-                WHERE submission_mode IS NOT NULL 
-                GROUP BY submission_mode
-            `);
-
+                FROM pensioners_live_data 
+                WHERE pensioner_DLC_type IS NOT NULL 
+                GROUP BY pensioner_DLC_type
+            `
+            const submissionRow = await dbGet(db, submissionTypeQuery);
+            console.log(submissionTypeQuery)
             // If single row returned, handle it differently
             if (submissionRow) {
                 // Single row case - need to get all modes
                 const allSubmissionModes = await new Promise((resolve) => {
                     db.all(`
-                        SELECT 
-                            submission_mode,
-                            COUNT(*) as count
-                        FROM doppw_pensioner_data 
-                        WHERE submission_mode IS NOT NULL 
-                        GROUP BY submission_mode
+                        SELECT pensioner_DLC_type as submission_mode
+                    COUNT(*) as count
+                FROM pensioners_live_data 
+                WHERE pensioner_DLC_type IS NOT NULL 
+                GROUP BY pensioner_DLC_type
                     `, [], (err, rows) => {
                         if (err) {
                             console.warn('Submission mode query failed:', err.message);
@@ -616,6 +562,7 @@ async function getDashboardStats() {
             }
 
             // Calculate percentages
+            // TODO: check for various DLC types along with video and manual
             const totalSubmissions = submissionStats.totalDLC + submissionStats.totalManual + submissionStats.totalUnknown;
             if (totalSubmissions > 0) {
                 submissionStats.dlcPercentage = Number(((submissionStats.totalDLC / totalSubmissions) * 100).toFixed(1));
@@ -637,14 +584,7 @@ async function getDashboardStats() {
                 verificationRate: totalVerified > 0 && totalPensioners > 0 ? Number(((totalVerified / totalPensioners) * 100).toFixed(2)) : 0
             },
             ageDistribution: formattedAgeDistribution,
-            submissionStats: submissionStats,
-            tableBreakdown: {
-                doppw_records: 0, // Will be filled by individual queries
-                bank_pensioners: 0,
-                psa_pensioners: 0,
-                dot_records: 0,
-                ubi_records: 0
-            }
+            submissionStats: submissionStats
         };
     } finally {
         closeDb();

@@ -1,0 +1,35 @@
+{
+  "title": "State-wise Pensioner Verification in India",
+  "data_source": "Comprehensive Database Analysis",
+  "color_scheme": {
+    "Very High": "#006837",
+    "High": "#31a354",
+    "Medium": "#78c679",
+    "Low": "#c2e699",
+    "Very Low": "#f7fcf5"
+  },
+  "legend": {
+    "title": "Verified Pensioners",
+    "categories": {
+      "Very High": "≥100,000 verified pensioners",
+      "High": "50,000-99,999 verified pensioners",
+      "Medium": "20,000-49,999 verified pensioners",
+      "Low": "5,000-19,999 verified pensioners",
+      "Very Low": "<5,000 verified pensioners"
+    }
+  },
+  "tooltip_template": {
+    "title": "{{state}}",
+    "content": [
+      "Verified Pensioners: {{verified_pensioners:,}}",
+      "Total Pensioners: {{total_pensioners:,}}",
+      "Verification Rate: {{verification_rate}}%",
+      "National Share: {{national_share}}%",
+      "Banks Count: {{banks_count}}",
+      "Rank: #{{rank}}"
+    ]
+  },
+  "data_url": "http://localhost:9007/api/choropleth/state-verification-data",
+  "simple_data_url": "http://localhost:9007/api/choropleth/simple-map-data",
+  "last_updated": "2025-10-17T10:48:14.766Z"
+}

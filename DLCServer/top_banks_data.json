@@ -1,0 +1,1779 @@
+{
+  "top_banks_overall": {
+    "STATE BANK OF INDIA": {
+      "total_pensioners": 1554168,
+      "branch_count": 33940
+    },
+    "PUNJAB NATIONAL BANK": {
+      "total_pensioners": 651060,
+      "branch_count": 24618
+    },
+    "CANARA BANK": {
+      "total_pensioners": 67064,
+      "branch_count": 7376
+    },
+    "CENTRAL BANK OF INDIA": {
+      "total_pensioners": 47947,
+      "branch_count": 4436
+    },
+    "BANK OF INDIA": {
+      "total_pensioners": 42421,
+      "branch_count": 4008
+    },
+    "INDIAN BANK": {
+      "total_pensioners": 35344,
+      "branch_count": 4663
+    },
+    "BANK OF BARODA": {
+      "total_pensioners": 34016,
+      "branch_count": 5240
+    },
+    "UNION BANK OF INDIA": {
+      "total_pensioners": 33653,
+      "branch_count": 5525
+    },
+    "UCO BANK": {
+      "total_pensioners": 19595,
+      "branch_count": 2050
+    },
+    "BANK OF MAHARASHTRA": {
+      "total_pensioners": 19340,
+      "branch_count": 1534
+    }
+  },
+  "top_banks_by_state": [
+    {
+      "bank_state": "ANDAMAN AND NICOBAR ISLAND",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 50,
+      "total_pensioners": 1525,
+      "pensioners_under_80": 1461,
+      "pensioners_over_80": 19,
+      "pensioners_age_unknown": 45
+    },
+    {
+      "bank_state": "ANDAMAN AND NICOBAR ISLAND",
+      "bank_name": "CANARA BANK",
+      "branch_count": 16,
+      "total_pensioners": 122,
+      "pensioners_under_80": 91,
+      "pensioners_over_80": 13,
+      "pensioners_age_unknown": 18
+    },
+    {
+      "bank_state": "ANDAMAN AND NICOBAR ISLAND",
+      "bank_name": "AXIS BANK",
+      "branch_count": 1,
+      "total_pensioners": 10,
+      "pensioners_under_80": 10,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "ANDAMAN AND NICOBAR ISLAND",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 1,
+      "total_pensioners": 4,
+      "pensioners_under_80": 4,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "ANDAMAN AND NICOBAR ISLAND",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 3,
+      "total_pensioners": 4,
+      "pensioners_under_80": 4,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "ANDHRA PRADESH",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 3270,
+      "total_pensioners": 81295,
+      "pensioners_under_80": 74077,
+      "pensioners_over_80": 3064,
+      "pensioners_age_unknown": 4154
+    },
+    {
+      "bank_state": "ANDHRA PRADESH",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 946,
+      "total_pensioners": 4469,
+      "pensioners_under_80": 3136,
+      "pensioners_over_80": 485,
+      "pensioners_age_unknown": 848
+    },
+    {
+      "bank_state": "ANDHRA PRADESH",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 276,
+      "total_pensioners": 4374,
+      "pensioners_under_80": 4078,
+      "pensioners_over_80": 178,
+      "pensioners_age_unknown": 118
+    },
+    {
+      "bank_state": "ANDHRA PRADESH",
+      "bank_name": "CANARA BANK",
+      "branch_count": 523,
+      "total_pensioners": 2399,
+      "pensioners_under_80": 1761,
+      "pensioners_over_80": 322,
+      "pensioners_age_unknown": 316
+    },
+    {
+      "bank_state": "ANDHRA PRADESH",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 153,
+      "total_pensioners": 774,
+      "pensioners_under_80": 609,
+      "pensioners_over_80": 80,
+      "pensioners_age_unknown": 85
+    },
+    {
+      "bank_state": "ARUNACHAL PRADESH",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 75,
+      "total_pensioners": 1053,
+      "pensioners_under_80": 1015,
+      "pensioners_over_80": 12,
+      "pensioners_age_unknown": 26
+    },
+    {
+      "bank_state": "ARUNACHAL PRADESH",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 2,
+      "total_pensioners": 11,
+      "pensioners_under_80": 10,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 1
+    },
+    {
+      "bank_state": "ARUNACHAL PRADESH",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 2,
+      "total_pensioners": 2,
+      "pensioners_under_80": 2,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "ARUNACHAL PRADESH",
+      "bank_name": "HDFC BANK",
+      "branch_count": 2,
+      "total_pensioners": 2,
+      "pensioners_under_80": 2,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "ARUNACHAL PRADESH",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 2,
+      "total_pensioners": 2,
+      "pensioners_under_80": 2,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "ASSAM",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 659,
+      "total_pensioners": 34024,
+      "pensioners_under_80": 30752,
+      "pensioners_over_80": 1098,
+      "pensioners_age_unknown": 2174
+    },
+    {
+      "bank_state": "ASSAM",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 764,
+      "total_pensioners": 10382,
+      "pensioners_under_80": 8710,
+      "pensioners_over_80": 658,
+      "pensioners_age_unknown": 1014
+    },
+    {
+      "bank_state": "ASSAM",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 147,
+      "total_pensioners": 988,
+      "pensioners_under_80": 867,
+      "pensioners_over_80": 54,
+      "pensioners_age_unknown": 67
+    },
+    {
+      "bank_state": "ASSAM",
+      "bank_name": "UCO BANK",
+      "branch_count": 134,
+      "total_pensioners": 835,
+      "pensioners_under_80": 619,
+      "pensioners_over_80": 68,
+      "pensioners_age_unknown": 148
+    },
+    {
+      "bank_state": "ASSAM",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 79,
+      "total_pensioners": 364,
+      "pensioners_under_80": 295,
+      "pensioners_over_80": 30,
+      "pensioners_age_unknown": 39
+    },
+    {
+      "bank_state": "BIHAR",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 1521,
+      "total_pensioners": 60948,
+      "pensioners_under_80": 56199,
+      "pensioners_over_80": 2660,
+      "pensioners_age_unknown": 2089
+    },
+    {
+      "bank_state": "BIHAR",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 1788,
+      "total_pensioners": 34710,
+      "pensioners_under_80": 30952,
+      "pensioners_over_80": 2340,
+      "pensioners_age_unknown": 1418
+    },
+    {
+      "bank_state": "BIHAR",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 494,
+      "total_pensioners": 4854,
+      "pensioners_under_80": 4090,
+      "pensioners_over_80": 496,
+      "pensioners_age_unknown": 268
+    },
+    {
+      "bank_state": "BIHAR",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 311,
+      "total_pensioners": 2910,
+      "pensioners_under_80": 2478,
+      "pensioners_over_80": 244,
+      "pensioners_age_unknown": 188
+    },
+    {
+      "bank_state": "BIHAR",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 236,
+      "total_pensioners": 1924,
+      "pensioners_under_80": 1538,
+      "pensioners_over_80": 256,
+      "pensioners_age_unknown": 130
+    },
+    {
+      "bank_state": "CHANDIGARH",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 587,
+      "total_pensioners": 11004,
+      "pensioners_under_80": 9345,
+      "pensioners_over_80": 1124,
+      "pensioners_age_unknown": 535
+    },
+    {
+      "bank_state": "CHANDIGARH",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 310,
+      "total_pensioners": 3208,
+      "pensioners_under_80": 2142,
+      "pensioners_over_80": 828,
+      "pensioners_age_unknown": 238
+    },
+    {
+      "bank_state": "CHANDIGARH",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 76,
+      "total_pensioners": 348,
+      "pensioners_under_80": 199,
+      "pensioners_over_80": 117,
+      "pensioners_age_unknown": 32
+    },
+    {
+      "bank_state": "CHANDIGARH",
+      "bank_name": "PUNJAB AND SIND BANK",
+      "branch_count": 19,
+      "total_pensioners": 231,
+      "pensioners_under_80": 122,
+      "pensioners_over_80": 69,
+      "pensioners_age_unknown": 40
+    },
+    {
+      "bank_state": "CHANDIGARH",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 33,
+      "total_pensioners": 205,
+      "pensioners_under_80": 110,
+      "pensioners_over_80": 75,
+      "pensioners_age_unknown": 20
+    },
+    {
+      "bank_state": "CHHATTISGARH",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 23,
+      "total_pensioners": 31,
+      "pensioners_under_80": 26,
+      "pensioners_over_80": 2,
+      "pensioners_age_unknown": 3
+    },
+    {
+      "bank_state": "CHHATTISGARH",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 1,
+      "total_pensioners": 1,
+      "pensioners_under_80": 0,
+      "pensioners_over_80": 1,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "CHHATTISGARH",
+      "bank_name": "HDFC BANK",
+      "branch_count": 1,
+      "total_pensioners": 1,
+      "pensioners_under_80": 1,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "DADRA AND NAGAR HAVELI",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 3,
+      "total_pensioners": 15,
+      "pensioners_under_80": 15,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "DADRA AND NAGAR HAVELI",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 2,
+      "total_pensioners": 3,
+      "pensioners_under_80": 3,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "DAMAN AND DIU",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 11,
+      "total_pensioners": 65,
+      "pensioners_under_80": 62,
+      "pensioners_over_80": 2,
+      "pensioners_age_unknown": 1
+    },
+    {
+      "bank_state": "DAMAN AND DIU",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 2,
+      "total_pensioners": 2,
+      "pensioners_under_80": 2,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "DAMAN AND DIU",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 1,
+      "total_pensioners": 2,
+      "pensioners_under_80": 2,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "DAMAN AND DIU",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 1,
+      "total_pensioners": 2,
+      "pensioners_under_80": 2,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "DAMAN AND DIU",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 1,
+      "total_pensioners": 1,
+      "pensioners_under_80": 1,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "GOA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 135,
+      "total_pensioners": 2694,
+      "pensioners_under_80": 2454,
+      "pensioners_over_80": 124,
+      "pensioners_age_unknown": 116
+    },
+    {
+      "bank_state": "GOA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 24,
+      "total_pensioners": 424,
+      "pensioners_under_80": 420,
+      "pensioners_over_80": 4,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "GOA",
+      "bank_name": "CANARA BANK",
+      "branch_count": 66,
+      "total_pensioners": 254,
+      "pensioners_under_80": 187,
+      "pensioners_over_80": 45,
+      "pensioners_age_unknown": 22
+    },
+    {
+      "bank_state": "GOA",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 41,
+      "total_pensioners": 147,
+      "pensioners_under_80": 115,
+      "pensioners_over_80": 24,
+      "pensioners_age_unknown": 8
+    },
+    {
+      "bank_state": "GOA",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 28,
+      "total_pensioners": 66,
+      "pensioners_under_80": 52,
+      "pensioners_over_80": 8,
+      "pensioners_age_unknown": 6
+    },
+    {
+      "bank_state": "GUJARAT",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 1515,
+      "total_pensioners": 23750,
+      "pensioners_under_80": 22695,
+      "pensioners_over_80": 518,
+      "pensioners_age_unknown": 537
+    },
+    {
+      "bank_state": "GUJARAT",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 640,
+      "total_pensioners": 1611,
+      "pensioners_under_80": 1399,
+      "pensioners_over_80": 100,
+      "pensioners_age_unknown": 112
+    },
+    {
+      "bank_state": "GUJARAT",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 248,
+      "total_pensioners": 720,
+      "pensioners_under_80": 700,
+      "pensioners_over_80": 16,
+      "pensioners_age_unknown": 4
+    },
+    {
+      "bank_state": "GUJARAT",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 159,
+      "total_pensioners": 480,
+      "pensioners_under_80": 405,
+      "pensioners_over_80": 32,
+      "pensioners_age_unknown": 43
+    },
+    {
+      "bank_state": "GUJARAT",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 127,
+      "total_pensioners": 380,
+      "pensioners_under_80": 320,
+      "pensioners_over_80": 35,
+      "pensioners_age_unknown": 25
+    },
+    {
+      "bank_state": "HARYANA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 2304,
+      "total_pensioners": 114208,
+      "pensioners_under_80": 96870,
+      "pensioners_over_80": 10410,
+      "pensioners_age_unknown": 6928
+    },
+    {
+      "bank_state": "HARYANA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 1026,
+      "total_pensioners": 84228,
+      "pensioners_under_80": 76094,
+      "pensioners_over_80": 4723,
+      "pensioners_age_unknown": 3411
+    },
+    {
+      "bank_state": "HARYANA",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 197,
+      "total_pensioners": 5452,
+      "pensioners_under_80": 4206,
+      "pensioners_over_80": 774,
+      "pensioners_age_unknown": 472
+    },
+    {
+      "bank_state": "HARYANA",
+      "bank_name": "CANARA BANK",
+      "branch_count": 338,
+      "total_pensioners": 5373,
+      "pensioners_under_80": 4115,
+      "pensioners_over_80": 762,
+      "pensioners_age_unknown": 496
+    },
+    {
+      "bank_state": "HARYANA",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 67,
+      "total_pensioners": 1360,
+      "pensioners_under_80": 1008,
+      "pensioners_over_80": 206,
+      "pensioners_age_unknown": 146
+    },
+    {
+      "bank_state": "HIMACHAL PRADESH",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 1156,
+      "total_pensioners": 79376,
+      "pensioners_under_80": 63406,
+      "pensioners_over_80": 10728,
+      "pensioners_age_unknown": 5242
+    },
+    {
+      "bank_state": "HIMACHAL PRADESH",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 588,
+      "total_pensioners": 45494,
+      "pensioners_under_80": 39610,
+      "pensioners_over_80": 3642,
+      "pensioners_age_unknown": 2242
+    },
+    {
+      "bank_state": "HIMACHAL PRADESH",
+      "bank_name": "UCO BANK",
+      "branch_count": 205,
+      "total_pensioners": 4876,
+      "pensioners_under_80": 3277,
+      "pensioners_over_80": 964,
+      "pensioners_age_unknown": 635
+    },
+    {
+      "bank_state": "HIMACHAL PRADESH",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 63,
+      "total_pensioners": 2158,
+      "pensioners_under_80": 1441,
+      "pensioners_over_80": 498,
+      "pensioners_age_unknown": 219
+    },
+    {
+      "bank_state": "HIMACHAL PRADESH",
+      "bank_name": "THE KANGRA CENTRAL COOPERATIVE BANK LIMITED",
+      "branch_count": 48,
+      "total_pensioners": 544,
+      "pensioners_under_80": 226,
+      "pensioners_over_80": 249,
+      "pensioners_age_unknown": 69
+    },
+    {
+      "bank_state": "JAMMU AND KASHMIR",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 358,
+      "total_pensioners": 50348,
+      "pensioners_under_80": 46556,
+      "pensioners_over_80": 1995,
+      "pensioners_age_unknown": 1797
+    },
+    {
+      "bank_state": "JAMMU AND KASHMIR",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 338,
+      "total_pensioners": 25458,
+      "pensioners_under_80": 21938,
+      "pensioners_over_80": 1900,
+      "pensioners_age_unknown": 1620
+    },
+    {
+      "bank_state": "JAMMU AND KASHMIR",
+      "bank_name": "JAMMU AND KASHMIR BANK LIMITED",
+      "branch_count": 247,
+      "total_pensioners": 3534,
+      "pensioners_under_80": 1764,
+      "pensioners_over_80": 870,
+      "pensioners_age_unknown": 900
+    },
+    {
+      "bank_state": "JAMMU AND KASHMIR",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 21,
+      "total_pensioners": 1319,
+      "pensioners_under_80": 1089,
+      "pensioners_over_80": 146,
+      "pensioners_age_unknown": 84
+    },
+    {
+      "bank_state": "JAMMU AND KASHMIR",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 64,
+      "total_pensioners": 427,
+      "pensioners_under_80": 385,
+      "pensioners_over_80": 19,
+      "pensioners_age_unknown": 23
+    },
+    {
+      "bank_state": "JHARKHAND",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 731,
+      "total_pensioners": 17626,
+      "pensioners_under_80": 16382,
+      "pensioners_over_80": 570,
+      "pensioners_age_unknown": 674
+    },
+    {
+      "bank_state": "JHARKHAND",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 318,
+      "total_pensioners": 2260,
+      "pensioners_under_80": 2006,
+      "pensioners_over_80": 152,
+      "pensioners_age_unknown": 102
+    },
+    {
+      "bank_state": "JHARKHAND",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 292,
+      "total_pensioners": 2229,
+      "pensioners_under_80": 1859,
+      "pensioners_over_80": 177,
+      "pensioners_age_unknown": 193
+    },
+    {
+      "bank_state": "JHARKHAND",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 42,
+      "total_pensioners": 217,
+      "pensioners_under_80": 191,
+      "pensioners_over_80": 12,
+      "pensioners_age_unknown": 14
+    },
+    {
+      "bank_state": "JHARKHAND",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 66,
+      "total_pensioners": 205,
+      "pensioners_under_80": 174,
+      "pensioners_over_80": 16,
+      "pensioners_age_unknown": 15
+    },
+    {
+      "bank_state": "KARNATAKA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 2033,
+      "total_pensioners": 64696,
+      "pensioners_under_80": 57979,
+      "pensioners_over_80": 3580,
+      "pensioners_age_unknown": 3137
+    },
+    {
+      "bank_state": "KARNATAKA",
+      "bank_name": "CANARA BANK",
+      "branch_count": 1453,
+      "total_pensioners": 11073,
+      "pensioners_under_80": 7723,
+      "pensioners_over_80": 1959,
+      "pensioners_age_unknown": 1391
+    },
+    {
+      "bank_state": "KARNATAKA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 202,
+      "total_pensioners": 1512,
+      "pensioners_under_80": 1346,
+      "pensioners_over_80": 124,
+      "pensioners_age_unknown": 42
+    },
+    {
+      "bank_state": "KARNATAKA",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 344,
+      "total_pensioners": 1056,
+      "pensioners_under_80": 712,
+      "pensioners_over_80": 199,
+      "pensioners_age_unknown": 145
+    },
+    {
+      "bank_state": "KARNATAKA",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 333,
+      "total_pensioners": 888,
+      "pensioners_under_80": 620,
+      "pensioners_over_80": 165,
+      "pensioners_age_unknown": 103
+    },
+    {
+      "bank_state": "KERALA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 2133,
+      "total_pensioners": 111555,
+      "pensioners_under_80": 89827,
+      "pensioners_over_80": 12932,
+      "pensioners_age_unknown": 8796
+    },
+    {
+      "bank_state": "KERALA",
+      "bank_name": "CANARA BANK",
+      "branch_count": 921,
+      "total_pensioners": 12103,
+      "pensioners_under_80": 7133,
+      "pensioners_over_80": 2988,
+      "pensioners_age_unknown": 1982
+    },
+    {
+      "bank_state": "KERALA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 430,
+      "total_pensioners": 2750,
+      "pensioners_under_80": 2472,
+      "pensioners_over_80": 138,
+      "pensioners_age_unknown": 140
+    },
+    {
+      "bank_state": "KERALA",
+      "bank_name": "INDIAN OVERSEAS BANK",
+      "branch_count": 237,
+      "total_pensioners": 2199,
+      "pensioners_under_80": 1249,
+      "pensioners_over_80": 522,
+      "pensioners_age_unknown": 428
+    },
+    {
+      "bank_state": "KERALA",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 304,
+      "total_pensioners": 1813,
+      "pensioners_under_80": 1065,
+      "pensioners_over_80": 461,
+      "pensioners_age_unknown": 287
+    },
+    {
+      "bank_state": "LAKSHADWEEP",
+      "bank_name": "CANARA BANK",
+      "branch_count": 11,
+      "total_pensioners": 42,
+      "pensioners_under_80": 38,
+      "pensioners_over_80": 1,
+      "pensioners_age_unknown": 3
+    },
+    {
+      "bank_state": "LAKSHADWEEP",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 2,
+      "total_pensioners": 25,
+      "pensioners_under_80": 25,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "MADHYA PRADESH",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 1573,
+      "total_pensioners": 52013,
+      "pensioners_under_80": 46131,
+      "pensioners_over_80": 3261,
+      "pensioners_age_unknown": 2621
+    },
+    {
+      "bank_state": "MADHYA PRADESH",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 704,
+      "total_pensioners": 14574,
+      "pensioners_under_80": 12082,
+      "pensioners_over_80": 1464,
+      "pensioners_age_unknown": 1028
+    },
+    {
+      "bank_state": "MADHYA PRADESH",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 376,
+      "total_pensioners": 5613,
+      "pensioners_under_80": 4561,
+      "pensioners_over_80": 675,
+      "pensioners_age_unknown": 377
+    },
+    {
+      "bank_state": "MADHYA PRADESH",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 260,
+      "total_pensioners": 3712,
+      "pensioners_under_80": 2946,
+      "pensioners_over_80": 478,
+      "pensioners_age_unknown": 288
+    },
+    {
+      "bank_state": "MADHYA PRADESH",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 191,
+      "total_pensioners": 3131,
+      "pensioners_under_80": 2254,
+      "pensioners_over_80": 577,
+      "pensioners_age_unknown": 300
+    },
+    {
+      "bank_state": "MAHARASHTRA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 2766,
+      "total_pensioners": 155967,
+      "pensioners_under_80": 137995,
+      "pensioners_over_80": 9605,
+      "pensioners_age_unknown": 8367
+    },
+    {
+      "bank_state": "MAHARASHTRA",
+      "bank_name": "BANK OF MAHARASHTRA",
+      "branch_count": 1349,
+      "total_pensioners": 18914,
+      "pensioners_under_80": 13765,
+      "pensioners_over_80": 3009,
+      "pensioners_age_unknown": 2140
+    },
+    {
+      "bank_state": "MAHARASHTRA",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 1031,
+      "total_pensioners": 18320,
+      "pensioners_under_80": 13597,
+      "pensioners_over_80": 2675,
+      "pensioners_age_unknown": 2048
+    },
+    {
+      "bank_state": "MAHARASHTRA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 786,
+      "total_pensioners": 11338,
+      "pensioners_under_80": 10538,
+      "pensioners_over_80": 526,
+      "pensioners_age_unknown": 274
+    },
+    {
+      "bank_state": "MAHARASHTRA",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 646,
+      "total_pensioners": 5549,
+      "pensioners_under_80": 4430,
+      "pensioners_over_80": 715,
+      "pensioners_age_unknown": 404
+    },
+    {
+      "bank_state": "MANIPUR",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 91,
+      "total_pensioners": 5137,
+      "pensioners_under_80": 4778,
+      "pensioners_over_80": 154,
+      "pensioners_age_unknown": 205
+    },
+    {
+      "bank_state": "MANIPUR",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 66,
+      "total_pensioners": 1134,
+      "pensioners_under_80": 1016,
+      "pensioners_over_80": 58,
+      "pensioners_age_unknown": 60
+    },
+    {
+      "bank_state": "MANIPUR",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 6,
+      "total_pensioners": 9,
+      "pensioners_under_80": 8,
+      "pensioners_over_80": 1,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "MANIPUR",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 7,
+      "total_pensioners": 9,
+      "pensioners_under_80": 9,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "MANIPUR",
+      "bank_name": "AXIS BANK",
+      "branch_count": 6,
+      "total_pensioners": 8,
+      "pensioners_under_80": 8,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "MEGHALAYA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 134,
+      "total_pensioners": 3213,
+      "pensioners_under_80": 2915,
+      "pensioners_over_80": 112,
+      "pensioners_age_unknown": 186
+    },
+    {
+      "bank_state": "MEGHALAYA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 26,
+      "total_pensioners": 230,
+      "pensioners_under_80": 152,
+      "pensioners_over_80": 40,
+      "pensioners_age_unknown": 38
+    },
+    {
+      "bank_state": "MEGHALAYA",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 6,
+      "total_pensioners": 194,
+      "pensioners_under_80": 133,
+      "pensioners_over_80": 16,
+      "pensioners_age_unknown": 45
+    },
+    {
+      "bank_state": "MEGHALAYA",
+      "bank_name": "UCO BANK",
+      "branch_count": 2,
+      "total_pensioners": 41,
+      "pensioners_under_80": 29,
+      "pensioners_over_80": 7,
+      "pensioners_age_unknown": 5
+    },
+    {
+      "bank_state": "MEGHALAYA",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 7,
+      "total_pensioners": 18,
+      "pensioners_under_80": 14,
+      "pensioners_over_80": 3,
+      "pensioners_age_unknown": 1
+    },
+    {
+      "bank_state": "MIZORAM",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 74,
+      "total_pensioners": 1894,
+      "pensioners_under_80": 1615,
+      "pensioners_over_80": 130,
+      "pensioners_age_unknown": 149
+    },
+    {
+      "bank_state": "MIZORAM",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 10,
+      "total_pensioners": 24,
+      "pensioners_under_80": 20,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 4
+    },
+    {
+      "bank_state": "MIZORAM",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 2,
+      "total_pensioners": 3,
+      "pensioners_under_80": 3,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "MIZORAM",
+      "bank_name": "HDFC BANK",
+      "branch_count": 1,
+      "total_pensioners": 1,
+      "pensioners_under_80": 1,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "MIZORAM",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 1,
+      "total_pensioners": 1,
+      "pensioners_under_80": 1,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "NAGALAND",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 99,
+      "total_pensioners": 1984,
+      "pensioners_under_80": 1733,
+      "pensioners_over_80": 137,
+      "pensioners_age_unknown": 114
+    },
+    {
+      "bank_state": "NAGALAND",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 12,
+      "total_pensioners": 58,
+      "pensioners_under_80": 54,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 4
+    },
+    {
+      "bank_state": "NAGALAND",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 6,
+      "total_pensioners": 26,
+      "pensioners_under_80": 25,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 1
+    },
+    {
+      "bank_state": "NAGALAND",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 3,
+      "total_pensioners": 5,
+      "pensioners_under_80": 5,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "NAGALAND",
+      "bank_name": "AXIS BANK",
+      "branch_count": 4,
+      "total_pensioners": 5,
+      "pensioners_under_80": 5,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "NEW DELHI",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 1044,
+      "total_pensioners": 28158,
+      "pensioners_under_80": 18884,
+      "pensioners_over_80": 6042,
+      "pensioners_age_unknown": 3232
+    },
+    {
+      "bank_state": "NEW DELHI",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 677,
+      "total_pensioners": 28078,
+      "pensioners_under_80": 23723,
+      "pensioners_over_80": 2975,
+      "pensioners_age_unknown": 1380
+    },
+    {
+      "bank_state": "NEW DELHI",
+      "bank_name": "CANARA BANK",
+      "branch_count": 404,
+      "total_pensioners": 8080,
+      "pensioners_under_80": 5405,
+      "pensioners_over_80": 1950,
+      "pensioners_age_unknown": 725
+    },
+    {
+      "bank_state": "NEW DELHI",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 249,
+      "total_pensioners": 1396,
+      "pensioners_under_80": 982,
+      "pensioners_over_80": 273,
+      "pensioners_age_unknown": 141
+    },
+    {
+      "bank_state": "NEW DELHI",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 138,
+      "total_pensioners": 1314,
+      "pensioners_under_80": 910,
+      "pensioners_over_80": 266,
+      "pensioners_age_unknown": 138
+    },
+    {
+      "bank_state": "ODISHA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 1287,
+      "total_pensioners": 35422,
+      "pensioners_under_80": 33347,
+      "pensioners_over_80": 879,
+      "pensioners_age_unknown": 1196
+    },
+    {
+      "bank_state": "ODISHA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 566,
+      "total_pensioners": 2416,
+      "pensioners_under_80": 2262,
+      "pensioners_over_80": 76,
+      "pensioners_age_unknown": 78
+    },
+    {
+      "bank_state": "ODISHA",
+      "bank_name": "UCO BANK",
+      "branch_count": 221,
+      "total_pensioners": 1204,
+      "pensioners_under_80": 1024,
+      "pensioners_over_80": 87,
+      "pensioners_age_unknown": 93
+    },
+    {
+      "bank_state": "ODISHA",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 204,
+      "total_pensioners": 1075,
+      "pensioners_under_80": 969,
+      "pensioners_over_80": 36,
+      "pensioners_age_unknown": 70
+    },
+    {
+      "bank_state": "ODISHA",
+      "bank_name": "INDIAN OVERSEAS BANK",
+      "branch_count": 108,
+      "total_pensioners": 606,
+      "pensioners_under_80": 506,
+      "pensioners_over_80": 39,
+      "pensioners_age_unknown": 61
+    },
+    {
+      "bank_state": "PUDUCHERRY",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 45,
+      "total_pensioners": 1109,
+      "pensioners_under_80": 991,
+      "pensioners_over_80": 61,
+      "pensioners_age_unknown": 57
+    },
+    {
+      "bank_state": "PUDUCHERRY",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 39,
+      "total_pensioners": 144,
+      "pensioners_under_80": 120,
+      "pensioners_over_80": 13,
+      "pensioners_age_unknown": 11
+    },
+    {
+      "bank_state": "PUDUCHERRY",
+      "bank_name": "INDIAN OVERSEAS BANK",
+      "branch_count": 25,
+      "total_pensioners": 106,
+      "pensioners_under_80": 79,
+      "pensioners_over_80": 17,
+      "pensioners_age_unknown": 10
+    },
+    {
+      "bank_state": "PUDUCHERRY",
+      "bank_name": "CANARA BANK",
+      "branch_count": 11,
+      "total_pensioners": 41,
+      "pensioners_under_80": 17,
+      "pensioners_over_80": 12,
+      "pensioners_age_unknown": 12
+    },
+    {
+      "bank_state": "PUDUCHERRY",
+      "bank_name": "UCO BANK",
+      "branch_count": 12,
+      "total_pensioners": 31,
+      "pensioners_under_80": 21,
+      "pensioners_over_80": 4,
+      "pensioners_age_unknown": 6
+    },
+    {
+      "bank_state": "PUNJAB",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 3006,
+      "total_pensioners": 137170,
+      "pensioners_under_80": 114374,
+      "pensioners_over_80": 14446,
+      "pensioners_age_unknown": 8350
+    },
+    {
+      "bank_state": "PUNJAB",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 1577,
+      "total_pensioners": 87931,
+      "pensioners_under_80": 79016,
+      "pensioners_over_80": 5466,
+      "pensioners_age_unknown": 3449
+    },
+    {
+      "bank_state": "PUNJAB",
+      "bank_name": "PUNJAB AND SIND BANK",
+      "branch_count": 640,
+      "total_pensioners": 7759,
+      "pensioners_under_80": 5441,
+      "pensioners_over_80": 1412,
+      "pensioners_age_unknown": 906
+    },
+    {
+      "bank_state": "PUNJAB",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 163,
+      "total_pensioners": 3675,
+      "pensioners_under_80": 2800,
+      "pensioners_over_80": 567,
+      "pensioners_age_unknown": 308
+    },
+    {
+      "bank_state": "PUNJAB",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 165,
+      "total_pensioners": 2428,
+      "pensioners_under_80": 1872,
+      "pensioners_over_80": 351,
+      "pensioners_age_unknown": 205
+    },
+    {
+      "bank_state": "RAJASTHAN",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 2021,
+      "total_pensioners": 101500,
+      "pensioners_under_80": 88586,
+      "pensioners_over_80": 7164,
+      "pensioners_age_unknown": 5750
+    },
+    {
+      "bank_state": "RAJASTHAN",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 1574,
+      "total_pensioners": 44684,
+      "pensioners_under_80": 38364,
+      "pensioners_over_80": 3848,
+      "pensioners_age_unknown": 2472
+    },
+    {
+      "bank_state": "RAJASTHAN",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 558,
+      "total_pensioners": 9953,
+      "pensioners_under_80": 7677,
+      "pensioners_over_80": 1248,
+      "pensioners_age_unknown": 1028
+    },
+    {
+      "bank_state": "RAJASTHAN",
+      "bank_name": "UCO BANK",
+      "branch_count": 205,
+      "total_pensioners": 3827,
+      "pensioners_under_80": 2832,
+      "pensioners_over_80": 513,
+      "pensioners_age_unknown": 482
+    },
+    {
+      "bank_state": "RAJASTHAN",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 148,
+      "total_pensioners": 1725,
+      "pensioners_under_80": 1380,
+      "pensioners_over_80": 204,
+      "pensioners_age_unknown": 141
+    },
+    {
+      "bank_state": "SIKKIM",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 56,
+      "total_pensioners": 874,
+      "pensioners_under_80": 786,
+      "pensioners_over_80": 45,
+      "pensioners_age_unknown": 43
+    },
+    {
+      "bank_state": "SIKKIM",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 13,
+      "total_pensioners": 70,
+      "pensioners_under_80": 59,
+      "pensioners_over_80": 9,
+      "pensioners_age_unknown": 2
+    },
+    {
+      "bank_state": "SIKKIM",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 4,
+      "total_pensioners": 30,
+      "pensioners_under_80": 30,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "SIKKIM",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 3,
+      "total_pensioners": 9,
+      "pensioners_under_80": 7,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 2
+    },
+    {
+      "bank_state": "SIKKIM",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 2,
+      "total_pensioners": 4,
+      "pensioners_under_80": 4,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "TAMILNADU",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 1947,
+      "total_pensioners": 89619,
+      "pensioners_under_80": 81060,
+      "pensioners_over_80": 4478,
+      "pensioners_age_unknown": 4081
+    },
+    {
+      "bank_state": "TAMILNADU",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 1227,
+      "total_pensioners": 11085,
+      "pensioners_under_80": 7784,
+      "pensioners_over_80": 1917,
+      "pensioners_age_unknown": 1384
+    },
+    {
+      "bank_state": "TAMILNADU",
+      "bank_name": "CANARA BANK",
+      "branch_count": 1163,
+      "total_pensioners": 11070,
+      "pensioners_under_80": 7777,
+      "pensioners_over_80": 1790,
+      "pensioners_age_unknown": 1503
+    },
+    {
+      "bank_state": "TAMILNADU",
+      "bank_name": "INDIAN OVERSEAS BANK",
+      "branch_count": 1162,
+      "total_pensioners": 6916,
+      "pensioners_under_80": 4923,
+      "pensioners_over_80": 1085,
+      "pensioners_age_unknown": 908
+    },
+    {
+      "bank_state": "TAMILNADU",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 366,
+      "total_pensioners": 1774,
+      "pensioners_under_80": 1544,
+      "pensioners_over_80": 150,
+      "pensioners_age_unknown": 80
+    },
+    {
+      "bank_state": "TELANGANA",
+      "bank_name": "CANARA BANK",
+      "branch_count": 175,
+      "total_pensioners": 2613,
+      "pensioners_under_80": 1732,
+      "pensioners_over_80": 503,
+      "pensioners_age_unknown": 378
+    },
+    {
+      "bank_state": "TELANGANA",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 372,
+      "total_pensioners": 1513,
+      "pensioners_under_80": 1118,
+      "pensioners_over_80": 182,
+      "pensioners_age_unknown": 213
+    },
+    {
+      "bank_state": "TELANGANA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 108,
+      "total_pensioners": 1113,
+      "pensioners_under_80": 1074,
+      "pensioners_over_80": 20,
+      "pensioners_age_unknown": 19
+    },
+    {
+      "bank_state": "TELANGANA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 56,
+      "total_pensioners": 142,
+      "pensioners_under_80": 100,
+      "pensioners_over_80": 34,
+      "pensioners_age_unknown": 8
+    },
+    {
+      "bank_state": "TELANGANA",
+      "bank_name": "ICICI BANK LIMITED",
+      "branch_count": 13,
+      "total_pensioners": 52,
+      "pensioners_under_80": 48,
+      "pensioners_over_80": 4,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "TRIPURA",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 106,
+      "total_pensioners": 2035,
+      "pensioners_under_80": 1869,
+      "pensioners_over_80": 62,
+      "pensioners_age_unknown": 104
+    },
+    {
+      "bank_state": "TRIPURA",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 84,
+      "total_pensioners": 204,
+      "pensioners_under_80": 144,
+      "pensioners_over_80": 32,
+      "pensioners_age_unknown": 28
+    },
+    {
+      "bank_state": "TRIPURA",
+      "bank_name": "UCO BANK",
+      "branch_count": 7,
+      "total_pensioners": 29,
+      "pensioners_under_80": 19,
+      "pensioners_over_80": 4,
+      "pensioners_age_unknown": 6
+    },
+    {
+      "bank_state": "TRIPURA",
+      "bank_name": "BANK OF INDIA",
+      "branch_count": 4,
+      "total_pensioners": 5,
+      "pensioners_under_80": 5,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "TRIPURA",
+      "bank_name": "AXIS BANK",
+      "branch_count": 2,
+      "total_pensioners": 5,
+      "pensioners_under_80": 5,
+      "pensioners_over_80": 0,
+      "pensioners_age_unknown": 0
+    },
+    {
+      "bank_state": "UTTAR PRADESH",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 3818,
+      "total_pensioners": 202894,
+      "pensioners_under_80": 183249,
+      "pensioners_over_80": 12113,
+      "pensioners_age_unknown": 7532
+    },
+    {
+      "bank_state": "UTTAR PRADESH",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 4368,
+      "total_pensioners": 74600,
+      "pensioners_under_80": 60478,
+      "pensioners_over_80": 9592,
+      "pensioners_age_unknown": 4530
+    },
+    {
+      "bank_state": "UTTAR PRADESH",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 1056,
+      "total_pensioners": 10215,
+      "pensioners_under_80": 7710,
+      "pensioners_over_80": 1712,
+      "pensioners_age_unknown": 793
+    },
+    {
+      "bank_state": "UTTAR PRADESH",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 1227,
+      "total_pensioners": 8514,
+      "pensioners_under_80": 6484,
+      "pensioners_over_80": 1295,
+      "pensioners_age_unknown": 735
+    },
+    {
+      "bank_state": "UTTAR PRADESH",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 729,
+      "total_pensioners": 7386,
+      "pensioners_under_80": 5433,
+      "pensioners_over_80": 1355,
+      "pensioners_age_unknown": 598
+    },
+    {
+      "bank_state": "UTTARAKHAND",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 809,
+      "total_pensioners": 109484,
+      "pensioners_under_80": 90279,
+      "pensioners_over_80": 11246,
+      "pensioners_age_unknown": 7959
+    },
+    {
+      "bank_state": "UTTARAKHAND",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 904,
+      "total_pensioners": 29216,
+      "pensioners_under_80": 22990,
+      "pensioners_over_80": 4274,
+      "pensioners_age_unknown": 1952
+    },
+    {
+      "bank_state": "UTTARAKHAND",
+      "bank_name": "BANK OF BARODA",
+      "branch_count": 140,
+      "total_pensioners": 2060,
+      "pensioners_under_80": 1386,
+      "pensioners_over_80": 392,
+      "pensioners_age_unknown": 282
+    },
+    {
+      "bank_state": "UTTARAKHAND",
+      "bank_name": "UNION BANK OF INDIA",
+      "branch_count": 110,
+      "total_pensioners": 1058,
+      "pensioners_under_80": 620,
+      "pensioners_over_80": 287,
+      "pensioners_age_unknown": 151
+    },
+    {
+      "bank_state": "UTTARAKHAND",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 60,
+      "total_pensioners": 1013,
+      "pensioners_under_80": 673,
+      "pensioners_over_80": 235,
+      "pensioners_age_unknown": 105
+    },
+    {
+      "bank_state": "WEST BENGAL",
+      "bank_name": "STATE BANK OF INDIA",
+      "branch_count": 2055,
+      "total_pensioners": 83556,
+      "pensioners_under_80": 73807,
+      "pensioners_over_80": 5068,
+      "pensioners_age_unknown": 4681
+    },
+    {
+      "bank_state": "WEST BENGAL",
+      "bank_name": "PUNJAB NATIONAL BANK",
+      "branch_count": 2876,
+      "total_pensioners": 25910,
+      "pensioners_under_80": 19574,
+      "pensioners_over_80": 3654,
+      "pensioners_age_unknown": 2682
+    },
+    {
+      "bank_state": "WEST BENGAL",
+      "bank_name": "INDIAN BANK",
+      "branch_count": 635,
+      "total_pensioners": 4982,
+      "pensioners_under_80": 3592,
+      "pensioners_over_80": 908,
+      "pensioners_age_unknown": 482
+    },
+    {
+      "bank_state": "WEST BENGAL",
+      "bank_name": "CENTRAL BANK OF INDIA",
+      "branch_count": 331,
+      "total_pensioners": 3272,
+      "pensioners_under_80": 2545,
+      "pensioners_over_80": 438,
+      "pensioners_age_unknown": 289
+    },
+    {
+      "bank_state": "WEST BENGAL",
+      "bank_name": "UCO BANK",
+      "branch_count": 389,
+      "total_pensioners": 2270,
+      "pensioners_under_80": 1673,
+      "pensioners_over_80": 312,
+      "pensioners_age_unknown": 285
+    }
+  ],
+  "state_summary": {
+    "UTTAR PRADESH": {
+      "total_pensioners": 323358,
+      "branch_count": 14302,
+      "unique_banks": 19
+    },
+    "PUNJAB": {
+      "total_pensioners": 244282,
+      "branch_count": 6592,
+      "unique_banks": 18
+    },
+    "MAHARASHTRA": {
+      "total_pensioners": 227540,
+      "branch_count": 9394,
+      "unique_banks": 20
+    },
+    "HARYANA": {
+      "total_pensioners": 215536,
+      "branch_count": 4880,
+      "unique_banks": 20
+    },
+    "RAJASTHAN": {
+      "total_pensioners": 163281,
+      "branch_count": 5017,
+      "unique_banks": 19
+    },
+    "UTTARAKHAND": {
+      "total_pensioners": 144727,
+      "branch_count": 2338,
+      "unique_banks": 18
+    },
+    "KERALA": {
+      "total_pensioners": 135067,
+      "branch_count": 4919,
+      "unique_banks": 22
+    },
+    "HIMACHAL PRADESH": {
+      "total_pensioners": 133528,
+      "branch_count": 2242,
+      "unique_banks": 16
+    },
+    "TAMILNADU": {
+      "total_pensioners": 125188,
+      "branch_count": 6990,
+      "unique_banks": 20
+    },
+    "WEST BENGAL": {
+      "total_pensioners": 125010,
+      "branch_count": 7487,
+      "unique_banks": 18
+    },
+    "BIHAR": {
+      "total_pensioners": 107082,
+      "branch_count": 4968,
+      "unique_banks": 15
+    },
+    "ANDHRA PRADESH": {
+      "total_pensioners": 96189,
+      "branch_count": 5999,
+      "unique_banks": 17
+    },
+    "MADHYA PRADESH": {
+      "total_pensioners": 82869,
+      "branch_count": 3729,
+      "unique_banks": 17
+    },
+    "JAMMU AND KASHMIR": {
+      "total_pensioners": 81699,
+      "branch_count": 1119,
+      "unique_banks": 16
+    },
+    "KARNATAKA": {
+      "total_pensioners": 80759,
+      "branch_count": 4949,
+      "unique_banks": 19
+    },
+    "NEW DELHI": {
+      "total_pensioners": 72434,
+      "branch_count": 3578,
+      "unique_banks": 19
+    },
+    "ASSAM": {
+      "total_pensioners": 46906,
+      "branch_count": 1941,
+      "unique_banks": 15
+    },
+    "ODISHA": {
+      "total_pensioners": 42207,
+      "branch_count": 2876,
+      "unique_banks": 15
+    },
+    "GUJARAT": {
+      "total_pensioners": 27595,
+      "branch_count": 3014,
+      "unique_banks": 16
+    },
+    "JHARKHAND": {
+      "total_pensioners": 23019,
+      "branch_count": 1663,
+      "unique_banks": 16
+    },
+    "CHANDIGARH": {
+      "total_pensioners": 15699,
+      "branch_count": 1250,
+      "unique_banks": 17
+    },
+    "MANIPUR": {
+      "total_pensioners": 6317,
+      "branch_count": 190,
+      "unique_banks": 11
+    },
+    "TELANGANA": {
+      "total_pensioners": 5557,
+      "branch_count": 797,
+      "unique_banks": 14
+    },
+    "GOA": {
+      "total_pensioners": 3747,
+      "branch_count": 360,
+      "unique_banks": 16
+    },
+    "MEGHALAYA": {
+      "total_pensioners": 3725,
+      "branch_count": 191,
+      "unique_banks": 12
+    },
+    "TRIPURA": {
+      "total_pensioners": 2286,
+      "branch_count": 210,
+      "unique_banks": 10
+    },
+    "NAGALAND": {
+      "total_pensioners": 2089,
+      "branch_count": 132,
+      "unique_banks": 12
+    },
+    "MIZORAM": {
+      "total_pensioners": 1923,
+      "branch_count": 88,
+      "unique_banks": 5
+    },
+    "ANDAMAN AND NICOBAR ISLAND": {
+      "total_pensioners": 1670,
+      "branch_count": 76,
+      "unique_banks": 9
+    },
+    "PUDUCHERRY": {
+      "total_pensioners": 1456,
+      "branch_count": 148,
+      "unique_banks": 14
+    },
+    "ARUNACHAL PRADESH": {
+      "total_pensioners": 1073,
+      "branch_count": 86,
+      "unique_banks": 8
+    },
+    "SIKKIM": {
+      "total_pensioners": 996,
+      "branch_count": 86,
+      "unique_banks": 10
+    },
+    "DAMAN AND DIU": {
+      "total_pensioners": 74,
+      "branch_count": 18,
+      "unique_banks": 7
+    },
+    "LAKSHADWEEP": {
+      "total_pensioners": 67,
+      "branch_count": 13,
+      "unique_banks": 2
+    },
+    "CHHATTISGARH": {
+      "total_pensioners": 33,
+      "branch_count": 25,
+      "unique_banks": 3
+    },
+    "DADRA AND NAGAR HAVELI": {
+      "total_pensioners": 18,
+      "branch_count": 5,
+      "unique_banks": 2
+    }
+  },
+  "total_states": 36,
+  "total_pensioners": "2545006",
+  "total_branches": "101672"
+}

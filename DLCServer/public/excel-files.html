@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Files Manager - DLC Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            color: #334155;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .main-controls {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .date-selector {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .date-selector label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .date-selector select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .date-selector select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .search-box {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .search-box input:disabled {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+            border-color: #e9ecef;
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .date-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-selector label {
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .date-selector select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .date-selector select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .upload-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #219a52;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .refresh-btn {
+            padding: 10px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #219a52;
+        }
+
+        .files-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .directory-section {
+            margin-bottom: 30px;
+        }
+
+        .directory-header {
+            background: #f1f2f6;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .directory-name {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .directory-count {
+            background: #3498db;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .file-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .file-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+            color: #10b981;
+            margin-bottom: 8px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            word-break: break-word;
+            font-size: 0.875rem;
+            line-height: 1.3;
+        }
+
+        .file-details {
+            font-size: 0.75rem;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .file-size {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .file-date {
+            color: #7f8c8d;
+        }
+
+        .processing-status {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-processed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-processing {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-pending {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+
+        .records-count {
+            font-size: 0.7rem;
+            color: #28a745;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .error-message {
+            font-size: 0.7rem;
+            color: #dc3545;
+            margin-top: 2px;
+            font-style: italic;
+        }
+
+        /* Upload Modal Styles */
+        .upload-section {
+            padding: 20px 0;
+        }
+
+        .upload-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .upload-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .file-drop-zone {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #fafafa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            border-color: #3498db;
+            background: #f0f8ff;
+        }
+
+        .drop-zone-content .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.6;
+        }
+
+        .browse-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .browse-btn:hover {
+            background: #2980b9;
+        }
+
+        .selected-files {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .selected-files h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .remove-file {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .remove-file:hover {
+            background: #c0392b;
+        }
+
+        .upload-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .upload-action-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .upload-action-btn:hover:not(:disabled) {
+            background: #219a52;
+        }
+
+        .upload-action-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .cancel-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .cancel-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .upload-progress {
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .no-files {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .no-files h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+
+            .files-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .sheet-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sheet-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sheet-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .sheet-info {
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Excel Files Manager</h1>
+            <p>DLC Portal - Pensioner Data Files</p>
+        </div>
+
+        <div class="main-controls">
+            <div class="controls-row">
+                <div class="date-selector">
+                    <label for="dateDropdown">Select Date</label>
+                    <select id="dateDropdown" onchange="loadFilesByDate()">
+                        <option value="">Choose date...</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="openUploadModal()">
+                        Upload Files
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshCurrentView()">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalFiles">-</div>
+                <div class="stat-label">Total Files</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalSize">-</div>
+                <div class="stat-label">Total Size</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalDirectories">-</div>
+                <div class="stat-label">Folders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="xlsxFiles">-</div>
+                <div class="stat-label">Files</div>
+            </div>
+        </div>
+
+        <div class="files-container" id="filesContainer">
+            <div class="loading">
+                <h3>Loading Excel files...</h3>
+                <p>Please wait while we scan your files.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Details Modal -->
+    <div id="fileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">File Details</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalBody">
+                <!-- File details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Files Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Excel Files</h2>
+                <span class="close" onclick="closeUploadModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="upload-section">
+                    <div class="upload-info">
+                        <p><strong>Upload Date:</strong> <span id="uploadDate"></span></p>
+                        <p><strong>Destination:</strong> Excel Files/<span id="uploadFolder"></span>/</p>
+                        <p><strong>Supported:</strong> .xlsx, .xls files (Max 100MB each)</p>
+                    </div>
+
+                    <div class="file-drop-zone" id="fileDropZone">
+                        <div class="drop-zone-content">
+                            <div class="upload-icon">📁</div>
+                            <p>Drag & drop Excel files here or <button type="button" class="browse-btn"
+                                    onclick="document.getElementById('fileInput').click()">browse files</button></p>
+                            <input type="file" id="fileInput" multiple accept=".xlsx,.xls" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div id="selectedFiles" class="selected-files" style="display: none;">
+                        <h4>Selected Files:</h4>
+                        <div id="filesList"></div>
+                    </div>
+
+                    <div class="upload-actions">
+                        <button id="uploadBtn" class="upload-action-btn" onclick="uploadFiles()" disabled>
+                            📤 Upload Files
+                        </button>
+                        <button class="cancel-btn" onclick="closeUploadModal()">Cancel</button>
+                    </div>
+
+                    <div id="uploadProgress" class="upload-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Uploading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:9007';
+        let allFiles = [];
+        let currentFilter = 'all';
+
+
+
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', function (e) {
+                filterFiles();
+            });
+
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    filterFiles();
+                });
+            });
+
+            // Modal close on outside click
+            window.addEventListener('click', function (event) {
+                const modal = document.getElementById('fileModal');
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        let processingStatus = {};
+
+        async function loadExcelFiles() {
+            const container = document.getElementById('filesContainer');
+
+            // Show loading animation
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 3rem; margin-bottom: 16px; animation: spin 2s linear infinite;">⏳</div>
+                    <h3 style="color: #1e293b; margin-bottom: 8px; font-weight: 600;">Loading All Files...</h3>
+                    <p style="color: #64748b;">Please wait while we scan your files.</p>
+                </div>
+            `;
+
+            try {
+                // Load files and processing status in parallel
+                const [filesResponse, statusResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/excel-files`),
+                    fetch(`${API_BASE_URL}/api/excel-files/processing/status`)
+                ]);
+
+                const filesData = await filesResponse.json();
+                const statusData = await statusResponse.json();
+
+                if (filesData.success) {
+                    allFiles = filesData.data.files;
+                    updateStatistics(filesData.data.statistics);
+
+                    // Store processing status
+                    if (statusData.success) {
+                        processingStatus = statusData.data;
+                    }
+
+                    displayFiles(filesData.data.filesByDirectory);
+                } else {
+                    showError(filesData.message || 'Failed to load Excel files');
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                showError('Failed to connect to server. Please make sure the server is running.');
+            }
+        }
+
+        function updateStatistics(stats) {
+            document.getElementById('totalFiles').textContent = stats.totalFiles;
+            document.getElementById('totalSize').textContent = stats.totalSizeFormatted;
+            document.getElementById('totalDirectories').textContent = stats.directories;
+            document.getElementById('xlsxFiles').textContent = stats.byExtension.xlsx;
+        }
+
+        function displayFiles(filesByDirectory) {
+            const container = document.getElementById('filesContainer');
+
+            if (Object.keys(filesByDirectory).length === 0) {
+                container.innerHTML = `
+                    <div class="no-files">
+                        <h3>No Excel files found</h3>
+                        <p>No .xlsx or .xls files were found in the Excel Files directory.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+
+            Object.keys(filesByDirectory).sort().forEach(directory => {
+                const files = filesByDirectory[directory];
+
+                html += `
+                    <div class="directory-section">
+                        <div class="directory-header">
+                            <div class="directory-name">📁 ${directory}</div>
+                            <div class="directory-count">${files.length} files</div>
+                        </div>
+                        <div class="files-grid">
+                `;
+
+                files.forEach(file => {
+                    const icon = file.extension === '.xlsx' ? '📊' : '📈';
+
+                    // Get processing status for this file
+                    const statusKey = `${file.name}|${file.path}`;
+                    const status = processingStatus[statusKey];
+
+                    let statusBadge = '';
+                    let statusDetails = '';
+
+                    if (status) {
+                        const statusClass = `status-${status.status}`;
+                        statusBadge = `<div class="processing-status ${statusClass}">${status.status}</div>`;
+
+                        if (status.status === 'processed' && status.recordsProcessed > 0) {
+                            statusDetails = `<div class="records-count">✅ ${status.recordsProcessed.toLocaleString()} records</div>`;
+                        } else if (status.status === 'error' && status.errorMessage) {
+                            statusDetails = `<div class="error-message">❌ ${status.errorMessage}</div>`;
+                        }
+                    } else {
+                        statusBadge = `<div class="processing-status status-pending">pending</div>`;
+                    }
+
+                    html += `
+                        <div class="file-card" onclick="showFileDetails('${file.name}')">
+                            ${statusBadge}
+                            <div class="file-icon">${icon}</div>
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-details">
+                                <div class="file-size">Size: ${file.sizeFormatted}</div>
+                                <div class="file-date">Modified: ${file.lastModifiedFormatted}</div>
+                                ${statusDetails}
+                                <div style="margin-top: 3px; color: #3498db; font-size: 0.7rem;">Click for details</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function filterFiles() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            let filteredFiles = allFiles;
+
+            // Apply search filter
+            if (searchTerm) {
+                filteredFiles = filteredFiles.filter(file =>
+                    file.name.toLowerCase().includes(searchTerm) ||
+                    file.directory.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Apply type filter
+            if (currentFilter !== 'all') {
+                if (currentFilter === 'xlsx') {
+                    filteredFiles = filteredFiles.filter(file => file.extension === '.xlsx');
+                } else if (currentFilter === 'xls') {
+                    filteredFiles = filteredFiles.filter(file => file.extension === '.xls');
+                } else if (currentFilter === 'recent') {
+                    // Show files modified in last 7 days
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    filteredFiles = filteredFiles.filter(file => new Date(file.lastModified) > weekAgo);
+                }
+            }
+
+            // Group filtered files by directory
+            const filesByDirectory = {};
+            filteredFiles.forEach(file => {
+                const dir = file.directory;
+                if (!filesByDirectory[dir]) {
+                    filesByDirectory[dir] = [];
+                }
+                filesByDirectory[dir].push(file);
+            });
+
+            displayFiles(filesByDirectory);
+        }
+
+        async function showFileDetails(filename) {
+            const modal = document.getElementById('fileModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.textContent = filename;
+            modalBody.innerHTML = '<div style="text-align: center; padding: 20px;">Loading file details...</div>';
+            modal.style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/excel-files/${encodeURIComponent(filename)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const file = data.data;
+
+                    // Get processing status for this file
+                    const statusKey = `${file.name}|${file.path}`;
+                    const status = processingStatus[statusKey];
+
+                    let statusHtml = '';
+                    if (status) {
+                        const statusClass = `status-${status.status}`;
+                        statusHtml = `
+                            <div style="margin-bottom: 15px; padding: 10px; border-radius: 5px; background: #f8f9fa;">
+                                <h3>🔄 Processing Status</h3>
+                                <p><strong>Status:</strong> <span class="processing-status ${statusClass}" style="position: relative; top: 0; right: 0;">${status.status}</span></p>
+                                ${status.recordsProcessed > 0 ? `<p><strong>Records Processed:</strong> ${status.recordsProcessed.toLocaleString()}</p>` : ''}
+                                ${status.processingDate ? `<p><strong>Processing Date:</strong> ${new Date(status.processingDate).toLocaleString()}</p>` : ''}
+                                ${status.errorMessage ? `<p><strong>Error:</strong> <span style="color: #dc3545;">${status.errorMessage}</span></p>` : ''}
+                            </div>
+                        `;
+                    } else {
+                        statusHtml = `
+                            <div style="margin-bottom: 15px; padding: 10px; border-radius: 5px; background: #f8f9fa;">
+                                <h3>🔄 Processing Status</h3>
+                                <p><strong>Status:</strong> <span class="processing-status status-pending" style="position: relative; top: 0; right: 0;">pending</span></p>
+                                <p style="color: #666; font-size: 0.9rem;">This file has not been processed yet.</p>
+                            </div>
+                        `;
+                    }
+
+                    let html = `
+                        ${statusHtml}
+                        <div style="margin-bottom: 20px;">
+                            <h3>📄 File Information</h3>
+                            <p><strong>Name:</strong> ${file.name}</p>
+                            <p><strong>Directory:</strong> ${file.directory}</p>
+                            <p><strong>Size:</strong> ${file.sizeFormatted}</p>
+                            <p><strong>Last Modified:</strong> ${file.lastModifiedFormatted}</p>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h3>⚙️ Actions</h3>
+                            <button onclick="markAsProcessed('${file.name}', '${file.path}')" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px; cursor: pointer;">Mark as Processed</button>
+                            <button onclick="markAsError('${file.name}', '${file.path}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Mark as Error</button>
+                        </div>
+                    `;
+
+                    if (file.sheets && file.sheets.length > 0) {
+                        html += `
+                            <div>
+                                <h3>📋 Sheets (${file.totalSheets})</h3>
+                                <ul class="sheet-list">
+                        `;
+
+                        file.sheets.forEach(sheet => {
+                            html += `
+                                <li class="sheet-item">
+                                    <span class="sheet-name">${sheet.name}</span>
+                                    <span class="sheet-info">${sheet.rowCount} rows × ${sheet.columnCount} cols</span>
+                                </li>
+                            `;
+                        });
+
+                        html += '</ul></div>';
+                    } else if (file.excelError) {
+                        html += `
+                            <div style="background: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;">
+                                <strong>⚠️ Could not read Excel file:</strong><br>
+                                ${file.excelError}
+                            </div>
+                        `;
+                    }
+
+                    modalBody.innerHTML = html;
+                } else {
+                    modalBody.innerHTML = `<div style="color: #e74c3c;">Error: ${data.message}</div>`;
+                }
+            } catch (error) {
+                modalBody.innerHTML = `<div style="color: #e74c3c;">Error loading file details: ${error.message}</div>`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('fileModal').style.display = 'none';
+        }
+
+        function showError(message) {
+            const container = document.getElementById('filesContainer');
+            container.innerHTML = `
+                <div class="error">
+                    <h3>❌ Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        async function markAsProcessed(filename, filePath) {
+            const records = prompt('How many records were processed?', '0');
+            if (records === null) return; // User cancelled
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/excel-files/processing/mark`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: filename,
+                        filePath: filePath,
+                        status: 'processed',
+                        recordsProcessed: parseInt(records) || 0
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('File marked as processed successfully!');
+                    closeModal();
+                    refreshCurrentView(); // Refresh current view
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error marking file as processed: ' + error.message);
+            }
+        }
+
+        async function markAsError(filename, filePath) {
+            const errorMessage = prompt('Enter error message:', '');
+            if (errorMessage === null) return; // User cancelled
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/excel-files/processing/mark`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: filename,
+                        filePath: filePath,
+                        status: 'error',
+                        errorMessage: errorMessage
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('File marked as error successfully!');
+                    closeModal();
+                    refreshCurrentView(); // Refresh current view
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error marking file as error: ' + error.message);
+            }
+        }
+
+        // Date dropdown and upload functionality
+        let availableDates = [];
+        let selectedFiles = [];
+
+        async function loadAvailableDates() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/excel-files/dates`);
+                const data = await response.json();
+
+                if (data.success) {
+                    availableDates = data.data.dates;
+                    populateDateDropdown();
+                }
+            } catch (error) {
+                console.error('Error loading dates:', error);
+            }
+        }
+
+        function populateDateDropdown() {
+            const dropdown = document.getElementById('dateDropdown');
+            dropdown.innerHTML = '<option value="">📅 Select Date...</option>';
+
+            // Add "View All Files" option
+            const allOption = document.createElement('option');
+            allOption.value = 'ALL';
+            allOption.textContent = '📂 View All Files';
+            dropdown.appendChild(allOption);
+
+            availableDates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date.folder;
+                option.textContent = date.displayName;
+                dropdown.appendChild(option);
+            });
+
+            console.log(`📅 Loaded ${availableDates.length} date options`);
+        }
+
+        async function loadFilesByDate() {
+            const dropdown = document.getElementById('dateDropdown');
+            const selectedDate = dropdown.value;
+            const container = document.getElementById('filesContainer');
+
+            if (!selectedDate) {
+                // Show selection message
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 3rem; margin-bottom: 16px; opacity: 0.6;">📅</div>
+                        <h3 style="color: #1e293b; margin-bottom: 8px; font-weight: 600;">Select a Date to View Files</h3>
+                        <p style="color: #64748b; margin-bottom: 24px;">Choose a date from the dropdown above to view Excel files.</p>
+                    </div>
+                `;
+
+                // Reset stats
+                document.getElementById('totalFiles').textContent = '-';
+                document.getElementById('totalSize').textContent = '-';
+                document.getElementById('totalDirectories').textContent = '-';
+                document.getElementById('xlsxFiles').textContent = '-';
+                return;
+            }
+
+            // Show loading animation immediately
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px;">
+                    <div style="font-size: 3rem; margin-bottom: 16px; animation: spin 2s linear infinite;">⏳</div>
+                    <h3 style="color: #1e293b; margin-bottom: 8px; font-weight: 600;">Loading Files...</h3>
+                    <p style="color: #64748b;">Please wait while we fetch your files.</p>
+                </div>
+            `;
+
+            if (selectedDate === 'ALL') {
+                // Load all files using the original function
+                loadExcelFiles();
+                return;
+            }
+
+            try {
+                const [filesResponse, statusResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/excel-files/by-date/${encodeURIComponent(selectedDate)}`),
+                    fetch(`${API_BASE_URL}/api/excel-files/processing/status`)
+                ]);
+
+                const filesData = await filesResponse.json();
+                const statusData = await statusResponse.json();
+
+                if (filesData.success) {
+                    // Store processing status
+                    if (statusData.success) {
+                        processingStatus = statusData.data;
+                    }
+
+                    displayDateFiles(filesData.data);
+                    updateStatsForDate(filesData.data);
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px;">
+                            <div style="font-size: 3rem; margin-bottom: 16px; opacity: 0.6;">❌</div>
+                            <h3 style="color: #dc2626; margin-bottom: 8px; font-weight: 600;">Error Loading Files</h3>
+                            <p style="color: #64748b;">${filesData.message || 'Failed to load files for selected date'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading files by date:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 3rem; margin-bottom: 16px; opacity: 0.6;">⚠️</div>
+                        <h3 style="color: #dc2626; margin-bottom: 8px; font-weight: 600;">Connection Error</h3>
+                        <p style="color: #64748b;">Failed to connect to server. Please check your connection.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayDateFiles(data) {
+            const container = document.getElementById('filesContainer');
+            const files = data.files;
+
+            if (files.length === 0) {
+                container.innerHTML = `
+                    <div class="no-files">
+                        <h3>No Excel files found</h3>
+                        <p>No .xlsx or .xls files were found for the selected date.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="directory-section">
+                    <div class="directory-header">
+                        <div class="directory-name">📁 ${data.dateFolder}</div>
+                        <div class="directory-count">${files.length} files</div>
+                    </div>
+                    <div class="files-grid">
+            `;
+
+            files.forEach(file => {
+                const icon = file.extension === '.xlsx' ? '📊' : '📈';
+
+                // Get processing status for this file
+                const statusKey = `${file.name}|${file.path}`;
+                const status = processingStatus[statusKey];
+
+                let statusBadge = '';
+                let statusDetails = '';
+
+                if (status) {
+                    const statusClass = `status-${status.status}`;
+                    statusBadge = `<div class="processing-status ${statusClass}">${status.status}</div>`;
+
+                    if (status.status === 'processed' && status.recordsProcessed > 0) {
+                        statusDetails = `<div class="records-count">✅ ${status.recordsProcessed.toLocaleString()} records</div>`;
+                    } else if (status.status === 'error' && status.errorMessage) {
+                        statusDetails = `<div class="error-message">❌ ${status.errorMessage}</div>`;
+                    }
+                } else {
+                    statusBadge = `<div class="processing-status status-pending">pending</div>`;
+                }
+
+                html += `
+                    <div class="file-card" onclick="showFileDetails('${file.name}')">
+                        ${statusBadge}
+                        <div class="file-icon">${icon}</div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-details">
+                            <div class="file-size">Size: ${file.sizeFormatted}</div>
+                            <div class="file-date">Modified: ${file.lastModifiedFormatted}</div>
+                            ${statusDetails}
+                            <div style="margin-top: 3px; color: #3498db; font-size: 0.7rem;">Click for details</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function updateStatsForDate(data) {
+            document.getElementById('totalFiles').textContent = data.fileCount;
+            document.getElementById('totalSize').textContent = data.totalSizeFormatted;
+            document.getElementById('totalDirectories').textContent = '1';
+
+            const xlsxCount = data.files.filter(f => f.extension === '.xlsx').length;
+            document.getElementById('xlsxFiles').textContent = xlsxCount;
+        }
+
+        // Upload functionality
+        function openUploadModal() {
+            const modal = document.getElementById('uploadModal');
+            const today = new Date();
+            const dateFolder = `${today.getDate().toString().padStart(2, '0')}${today.toLocaleString('en-US', { month: 'short' })}`;
+
+            document.getElementById('uploadDate').textContent = today.toLocaleDateString('en-IN');
+            document.getElementById('uploadFolder').textContent = dateFolder;
+
+            // Reset modal state
+            selectedFiles = [];
+            updateSelectedFilesList();
+            document.getElementById('uploadProgress').style.display = 'none';
+
+            modal.style.display = 'block';
+            setupDragAndDrop();
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+            selectedFiles = [];
+        }
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('fileDropZone');
+            const fileInput = document.getElementById('fileInput');
+
+            // File input change
+            fileInput.addEventListener('change', function (e) {
+                handleFiles(e.target.files);
+            });
+
+            // Drag and drop events
+            dropZone.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', function (e) {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', function (e) {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+        }
+
+        function handleFiles(files) {
+            for (let file of files) {
+                if (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.type === 'application/vnd.ms-excel' ||
+                    file.name.endsWith('.xlsx') ||
+                    file.name.endsWith('.xls')) {
+
+                    // Check if file already selected
+                    if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                        selectedFiles.push(file);
+                    }
+                } else {
+                    alert(`File "${file.name}" is not a valid Excel file. Only .xlsx and .xls files are allowed.`);
+                }
+            }
+
+            updateSelectedFilesList();
+        }
+
+        function updateSelectedFilesList() {
+            const container = document.getElementById('selectedFiles');
+            const filesList = document.getElementById('filesList');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            if (selectedFiles.length === 0) {
+                container.style.display = 'none';
+                uploadBtn.disabled = true;
+                return;
+            }
+
+            container.style.display = 'block';
+            uploadBtn.disabled = false;
+
+            let html = '';
+            selectedFiles.forEach((file, index) => {
+                html += `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <span>📊 ${file.name}</span>
+                            <span class="file-size">(${formatFileSize(file.size)})</span>
+                        </div>
+                        <button class="remove-file" onclick="removeFile(${index})">Remove</button>
+                    </div>
+                `;
+            });
+
+            filesList.innerHTML = html;
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateSelectedFilesList();
+        }
+
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) return;
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressContainer = document.getElementById('uploadProgress');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+
+            uploadBtn.disabled = true;
+            progressContainer.style.display = 'block';
+
+            try {
+                const formData = new FormData();
+                selectedFiles.forEach(file => {
+                    formData.append('excelFiles', file);
+                });
+
+                const xhr = new XMLHttpRequest();
+
+                // Progress tracking
+                xhr.upload.addEventListener('progress', function (e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressFill.style.width = percentComplete + '%';
+                        progressText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
+                    }
+                });
+
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            alert(`Successfully uploaded ${response.data.uploadCount} file(s)!`);
+                            closeUploadModal();
+                            loadAvailableDates(); // Refresh dates
+                            refreshCurrentView(); // Refresh current view instead of loading all files
+                        } else {
+                            alert('Upload failed: ' + response.message);
+                        }
+                    } else {
+                        alert('Upload failed. Please try again.');
+                    }
+
+                    uploadBtn.disabled = false;
+                    progressContainer.style.display = 'none';
+                };
+
+                xhr.onerror = function () {
+                    alert('Upload failed. Please check your connection and try again.');
+                    uploadBtn.disabled = false;
+                    progressContainer.style.display = 'none';
+                };
+
+                xhr.open('POST', `${API_BASE_URL}/api/excel-files/upload`);
+                xhr.send(formData);
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed: ' + error.message);
+                uploadBtn.disabled = false;
+                progressContainer.style.display = 'none';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function refreshCurrentView() {
+            const dropdown = document.getElementById('dateDropdown');
+            const selectedDate = dropdown.value;
+
+            if (!selectedDate) {
+                // Just refresh dates dropdown, don't show files
+                loadAvailableDates();
+                // Show the selection message again
+                const container = document.getElementById('filesContainer');
+                container.innerHTML = `
+                    <div class="no-files">
+                        <div style="text-align: center; padding: 60px 20px;">
+                            <div style="font-size: 3rem; margin-bottom: 16px; opacity: 0.6;">📅</div>
+                            <h3 style="color: #1e293b; margin-bottom: 8px; font-weight: 600;">Select a Date to View Files</h3>
+                            <p style="color: #64748b; margin-bottom: 24px;">Choose a date from the dropdown above to view Excel files.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (selectedDate === 'ALL') {
+                // Refresh all files
+                loadExcelFiles();
+            } else {
+                // Refresh selected date files
+                loadFilesByDate();
+            }
+        }
+
+        // Update the DOMContentLoaded event to load dates
+        document.addEventListener('DOMContentLoaded', function () {
+            // Show initial message and reset stats
+            const container = document.getElementById('filesContainer');
+            container.innerHTML = `
+                <div class="no-files">
+                    <h3>📅 Select a Date to View Files</h3>
+                    <p>Choose a date from the dropdown above to view Excel files.</p>
+                </div>
+            `;
+
+            // Reset stats to show nothing initially
+            document.getElementById('totalFiles').textContent = '-';
+            document.getElementById('totalSize').textContent = '-';
+            document.getElementById('totalDirectories').textContent = '-';
+            document.getElementById('xlsxFiles').textContent = '-';
+
+            loadAvailableDates();
+            setupEventListeners();
+        });
+
+        // Modal close on outside click for upload modal
+        window.addEventListener('click', function (event) {
+            const fileModal = document.getElementById('fileModal');
+            const uploadModal = document.getElementById('uploadModal');
+
+            if (event.target === fileModal) {
+                closeModal();
+            }
+            if (event.target === uploadModal) {
+                closeUploadModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

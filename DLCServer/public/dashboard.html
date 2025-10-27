@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLC Pension Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .dashboard-container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .description {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .content-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            border-left: 4px solid #c33;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DLC Pension Dashboard</h1>
+        <div class="user-info">
+            <span id="welcomeMessage">Welcome, User</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <div id="loadingIndicator" class="loading"></div>
+        <div id="errorMessage" class="error-message hidden"></div>
+
+        <div id="dashboardContent" class="hidden">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Pensioners</h3>
+                    <div class="number" id="totalPensioners">-</div>
+                    <div class="description">Registered in system</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Verified Today</h3>
+                    <div class="number" id="verifiedToday">-</div>
+                    <div class="description">Certificates processed</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Pending Queue</h3>
+                    <div class="number" id="pendingQueue">-</div>
+                    <div class="description">Awaiting verification</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Verification Rate</h3>
+                    <div class="number" id="verificationRate">-</div>
+                    <div class="description">Overall completion</div>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <h2 class="section-title">State-wise Statistics</h2>
+                <div class="table-container">
+                    <table id="stateStatsTable">
+                        <thead>
+                            <tr>
+                                <th>State</th>
+                                <th>Total</th>
+                                <th>Verified</th>
+                                <th>Pending</th>
+                                <th>Completion %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stateStatsBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center;">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:9007';
+        const EXTERNAL_API_URL = 'https://samar.iitk.ac.in/dlc-pension-data-api';
+
+        // Check authentication on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('auth_token');
+            const userData = localStorage.getItem('user_data');
+
+            if (!token) {
+                // No token, redirect to login
+                window.location.href = '/';
+                return;
+            }
+
+            // Set welcome message
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    document.getElementById('welcomeMessage').textContent = `Welcome, ${user.username}`;
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
+            }
+
+            // Load dashboard data
+            loadDashboardData(token);
+        });
+
+        async function loadDashboardData(token) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const errorMessage = document.getElementById('errorMessage');
+            const dashboardContent = document.getElementById('dashboardContent');
+
+            try {
+                // Show loading
+                loadingIndicator.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                dashboardContent.classList.add('hidden');
+
+                // Fetch dashboard stats
+                const statsResponse = await fetch(`${API_BASE_URL}/api/dashboard/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (statsResponse.status === 401) {
+                    // Token expired or invalid
+                    logout();
+                    return;
+                }
+
+                if (!statsResponse.ok) {
+                    throw new Error('Failed to fetch dashboard statistics');
+                }
+
+                const statsData = await statsResponse.json();
+
+                // Update stats cards
+                document.getElementById('totalPensioners').textContent = statsData.totalPensioners?.toLocaleString() || '0';
+                document.getElementById('verifiedToday').textContent = statsData.verifiedToday?.toLocaleString() || '0';
+                document.getElementById('pendingQueue').textContent = statsData.summary?.pending?.toLocaleString() || '0';
+                document.getElementById('verificationRate').textContent = `${statsData.summary?.verificationRate || 0}%`;
+
+                // Fetch state-wise statistics
+                const stateStatsResponse = await fetch(`${API_BASE_URL}/api/dashboard/state-stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (stateStatsResponse.ok) {
+                    const stateStatsData = await stateStatsResponse.json();
+                    populateStateStatsTable(stateStatsData.stateStats || []);
+                }
+
+                // Show dashboard content
+                loadingIndicator.classList.add('hidden');
+                dashboardContent.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                loadingIndicator.classList.add('hidden');
+                errorMessage.textContent = `Error loading dashboard: ${error.message}`;
+                errorMessage.classList.remove('hidden');
+            }
+        }
+
+        function populateStateStatsTable(stateStats) {
+            const tbody = document.getElementById('stateStatsBody');
+            
+            if (stateStats.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = stateStats.map(state => `
+                <tr style="cursor: pointer;" onclick="viewStateDistricts('${state.state}')">
+                    <td>${state.state}</td>
+                    <td>${state.total?.toLocaleString() || 0}</td>
+                    <td>${state.verified?.toLocaleString() || 0}</td>
+                    <td>${state.pending?.toLocaleString() || 0}</td>
+                    <td>${state.completionPercentage?.toFixed(1) || 0}%</td>
+                </tr>
+            `).join('');
+        }
+
+        async function viewStateDistricts(stateName) {
+            try {
+                console.log(`Viewing districts for state: ${stateName}`);
+                
+                // Call your local API for district data
+                const response = await fetch(`${API_BASE_URL}/api/pensioners/state-districts/${encodeURIComponent(stateName)}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch district data');
+                }
+                
+                const data = await response.json();
+                console.log('District data:', data);
+                
+                // Display district data (you can customize this)
+                alert(`Districts in ${stateName}:\nTotal Districts: ${data.state_summary.total_districts}\nTotal Pensioners: ${data.state_summary.total_pensioners_all_tables.toLocaleString()}\nVerified: ${data.state_summary.total_verified_doppw.toLocaleString()}\nCompletion Rate: ${data.state_summary.overall_completion_rate}%`);
+                
+            } catch (error) {
+                console.error('Error fetching district data:', error);
+                alert('Error loading district data: ' + error.message);
+            }
+        }
+
+        function logout() {
+            // Clear stored authentication data
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_data');
+            
+            // Redirect to login page
+            window.location.href = '/';
+        }
+
+        // Auto-refresh dashboard data every 5 minutes
+        setInterval(() => {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                loadDashboardData(token);
+            }
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

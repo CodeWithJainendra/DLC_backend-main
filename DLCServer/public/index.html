@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLC Pension Dashboard - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #c33;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 0.75rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #3c3;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>DLC Pension Dashboard</h1>
+            <p>Please sign in to continue</p>
+        </div>
+
+        <div id="errorMessage" class="error-message hidden"></div>
+        <div id="successMessage" class="success-message hidden"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span id="loginText">Sign In</span>
+                <span id="loginLoader" class="loading hidden"></span>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:9007';
+        const EXTERNAL_API_URL = 'https://samar.iitk.ac.in/dlc-pension-data-api';
+
+        // Check if user is already logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                // Verify token is still valid
+                verifyToken(token);
+            }
+        });
+
+        async function verifyToken(token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    // Token is valid, redirect to dashboard
+                    window.location.href = '/dashboard';
+                } else {
+                    // Token is invalid, remove it
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user_data');
+                }
+            } catch (error) {
+                console.error('Token verification failed:', error);
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = document.getElementById('loginText');
+            const loginLoader = document.getElementById('loginLoader');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            // Hide previous messages
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+
+            // Show loading state
+            loginBtn.disabled = true;
+            loginText.classList.add('hidden');
+            loginLoader.classList.remove('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Store authentication data
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('user_data', JSON.stringify(data.user));
+                    
+                    // Show success message
+                    successMessage.textContent = 'Login successful! Redirecting...';
+                    successMessage.classList.remove('hidden');
+                    
+                    // Redirect to dashboard after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    // Show error message
+                    errorMessage.textContent = data.message || 'Login failed. Please try again.';
+                    errorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.textContent = 'Network error. Please check your connection and try again.';
+                errorMessage.classList.remove('hidden');
+            } finally {
+                // Reset button state
+                loginBtn.disabled = false;
+                loginText.classList.remove('hidden');
+                loginLoader.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

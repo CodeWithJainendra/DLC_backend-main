@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel to Database Mapper - Pensioner Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .step {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .step-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .file-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .file-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .file-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .sheet-analysis {
+            margin-top: 20px;
+        }
+
+        .sheet-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .sheet-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .sheet-stats {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .columns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .column-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .column-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .column-type {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .column-samples {
+            font-size: 0.8em;
+            color: #888;
+            font-style: italic;
+        }
+
+        .mapping-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .mapping-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 2fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .mapping-label {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        select, input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .table-name-input {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .detected-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+
+        .badge-pincode {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .badge-bank {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .badge-age {
+            background: #28a745;
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Excel to Database Mapper</h1>
+            <p>Pincode-wise Pensioner Data Analysis System</p>
+        </div>
+
+        <div class="content">
+            <!-- Step 1: Select Excel Files -->
+            <div class="step" id="step1">
+                <div class="step-title">
+                    <span class="step-number">1</span>
+                    Select Excel Files to Process
+                </div>
+                <div id="fileList" class="file-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading Excel files...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Analyze Selected Files -->
+            <div class="step" id="step2" style="display: none;">
+                <div class="step-title">
+                    <span class="step-number">2</span>
+                    Analyze Sheets and Columns
+                </div>
+                <button class="btn btn-primary" onclick="analyzeSelectedFiles()">
+                    🔍 Analyze Selected Files
+                </button>
+                <div id="analysisResults" class="sheet-analysis"></div>
+            </div>
+
+            <!-- Step 3: Map Columns -->
+            <div class="step" id="step3" style="display: none;">
+                <div class="step-title">
+                    <span class="step-number">3</span>
+                    Map Columns to Database Fields
+                </div>
+                <div id="mappingSection"></div>
+            </div>
+
+            <!-- Step 4: Create Database -->
+            <div class="step" id="step4" style="display: none;">
+                <div class="step-title">
+                    <span class="step-number">4</span>
+                    Create Database
+                </div>
+                <div>
+                    <label><strong>Database Name:</strong></label>
+                    <input type="text" id="databaseName" class="table-name-input" 
+                           value="newdatabase.db" placeholder="Enter database name">
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="createDatabase()">
+                        ✅ Create Database & Import Data
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetMapping()">
+                        🔄 Reset
+                    </button>
+                </div>
+                <div id="progressSection" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill">0%</div>
+                    </div>
+                </div>
+                <div id="resultSection"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let excelFiles = [];
+        let selectedFiles = [];
+        let analysisData = {};
+        let columnMappings = {};
+
+        // Load Excel files on page load
+        window.onload = function() {
+            loadExcelFiles();
+        };
+
+        async function loadExcelFiles() {
+            try {
+                const response = await fetch('/api/excel/files');
+                const data = await response.json();
+                
+                if (data.success) {
+                    excelFiles = data.files;
+                    displayFileList();
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                document.getElementById('fileList').innerHTML = 
+                    '<div class="alert alert-error">Error loading Excel files</div>';
+            }
+        }
+
+        function displayFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            excelFiles.forEach((file, index) => {
+                const card = document.createElement('div');
+                card.className = 'file-card';
+                card.onclick = () => toggleFileSelection(index);
+                
+                card.innerHTML = `
+                    <div class="file-name">📄 ${file.name}</div>
+                    <div class="file-info">📁 ${file.directory}</div>
+                    <div class="file-info">💾 ${file.sizeFormatted}</div>
+                `;
+                
+                fileList.appendChild(card);
+            });
+            
+            document.getElementById('step2').style.display = 'block';
+        }
+
+        function toggleFileSelection(index) {
+            const cards = document.querySelectorAll('.file-card');
+            const file = excelFiles[index];
+            
+            const fileIndex = selectedFiles.findIndex(f => f.path === file.path);
+            
+            if (fileIndex > -1) {
+                selectedFiles.splice(fileIndex, 1);
+                cards[index].classList.remove('selected');
+            } else {
+                selectedFiles.push(file);
+                cards[index].classList.add('selected');
+            }
+        }
+
+        async function analyzeSelectedFiles() {
+            if (selectedFiles.length === 0) {
+                alert('Please select at least one Excel file');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('analysisResults');
+            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Analyzing files...</div>';
+
+            analysisData = {};
+
+            for (const file of selectedFiles) {
+                try {
+                    const response = await fetch('/api/excel/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filePath: file.path })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        analysisData[file.path] = data.analysis;
+                    }
+                } catch (error) {
+                    console.error('Error analyzing file:', error);
+                }
+            }
+
+            displayAnalysisResults();
+            document.getElementById('step3').style.display = 'block';
+            document.getElementById('step4').style.display = 'block';
+        }
+
+        function displayAnalysisResults() {
+            const resultsDiv = document.getElementById('analysisResults');
+            resultsDiv.innerHTML = '';
+
+            Object.values(analysisData).forEach(analysis => {
+                const fileDiv = document.createElement('div');
+                fileDiv.style.marginBottom = '30px';
+                
+                fileDiv.innerHTML = `
+                    <h3 style="color: #667eea; margin-bottom: 15px;">📄 ${analysis.fileName}</h3>
+                `;
+
+                analysis.sheets.forEach(sheet => {
+                    const sheetCard = document.createElement('div');
+                    sheetCard.className = 'sheet-card';
+                    
+                    let detectedInfo = '';
+                    if (sheet.detectedColumns.pincode.length > 0) {
+                        detectedInfo += '<span class="detected-badge badge-pincode">📍 Pincode Detected</span>';
+                    }
+                    if (sheet.detectedColumns.bank.length > 0) {
+                        detectedInfo += '<span class="detected-badge badge-bank">🏦 Bank Detected</span>';
+                    }
+                    if (sheet.detectedColumns.age.length > 0) {
+                        detectedInfo += '<span class="detected-badge badge-age">👥 Age Categories Detected</span>';
+                    }
+
+                    sheetCard.innerHTML = `
+                        <div class="sheet-header">
+                            <div>
+                                <div class="sheet-name">📋 ${sheet.name}</div>
+                                ${detectedInfo}
+                            </div>
+                            <div class="sheet-stats">
+                                ${sheet.rowCount} rows × ${sheet.columnCount} columns
+                            </div>
+                        </div>
+                        <div class="columns-grid" id="columns-${analysis.fileName}-${sheet.name}">
+                            ${sheet.columns.map(col => `
+                                <div class="column-item">
+                                    <div class="column-name">${col.name}</div>
+                                    <div class="column-type">Type: ${col.dataType}</div>
+                                    <div class="column-samples">
+                                        ${col.sampleValues.slice(0, 2).join(', ')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    
+                    fileDiv.appendChild(sheetCard);
+                });
+
+                resultsDiv.appendChild(fileDiv);
+            });
+
+            generateMappingInterface();
+        }
+
+        function generateMappingInterface() {
+            const mappingSection = document.getElementById('mappingSection');
+            mappingSection.innerHTML = '';
+
+            const standardFields = [
+                { name: 'pincode', label: 'Pincode', type: 'TEXT' },
+                { name: 'bank_name', label: 'Bank Name', type: 'TEXT' },
+                { name: 'bank_ifsc', label: 'Bank IFSC', type: 'TEXT' },
+                { name: 'state', label: 'State', type: 'TEXT' },
+                { name: 'district', label: 'District', type: 'TEXT' },
+                { name: 'city', label: 'City', type: 'TEXT' },
+                { name: 'age_less_than_80', label: 'Age < 80', type: 'INTEGER' },
+                { name: 'age_more_than_80', label: 'Age > 80', type: 'INTEGER' },
+                { name: 'age_not_available', label: 'Age N/A', type: 'INTEGER' },
+                { name: 'grand_total', label: 'Total Pensioners', type: 'INTEGER' }
+            ];
+
+            mappingSection.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>💡 Tip:</strong> Map your Excel columns to standard database fields. 
+                    Leave unmapped if column doesn't exist in your file.
+                </div>
+                <div>
+                    <label><strong>Table Name:</strong></label>
+                    <input type="text" id="tableName" class="table-name-input" 
+                           value="pensioner_data" placeholder="Enter table name">
+                </div>
+            `;
+
+            const mappingDiv = document.createElement('div');
+            mappingDiv.style.marginTop = '20px';
+
+            standardFields.forEach(field => {
+                const row = document.createElement('div');
+                row.className = 'mapping-row';
+                
+                row.innerHTML = `
+                    <div class="mapping-label">${field.label}</div>
+                    <div style="color: #888; font-size: 0.9em;">${field.type}</div>
+                    <select id="map-${field.name}" class="mapping-select">
+                        <option value="">-- Not Mapped --</option>
+                        ${getAllColumns().map(col => 
+                            `<option value="${col.file}|||${col.sheet}|||${col.index}">${col.name} (${col.file} - ${col.sheet})</option>`
+                        ).join('')}
+                    </select>
+                    <div style="color: #888; font-size: 0.9em;">→ ${field.name}</div>
+                    <button class="btn btn-secondary" style="padding: 8px 15px;" 
+                            onclick="autoMap('${field.name}')">Auto</button>
+                `;
+                
+                mappingDiv.appendChild(row);
+            });
+
+            mappingSection.appendChild(mappingDiv);
+        }
+
+        function getAllColumns() {
+            const columns = [];
+            
+            Object.values(analysisData).forEach(analysis => {
+                analysis.sheets.forEach(sheet => {
+                    sheet.columns.forEach(col => {
+                        columns.push({
+                            file: analysis.fileName,
+                            sheet: sheet.name,
+                            name: col.name,
+                            index: col.index,
+                            type: col.dataType
+                        });
+                    });
+                });
+            });
+            
+            return columns;
+        }
+
+        function autoMap(fieldName) {
+            const select = document.getElementById(`map-${fieldName}`);
+            const columns = getAllColumns();
+            
+            // Auto-mapping logic
+            const keywords = {
+                'pincode': ['pin', 'code', 'pincode'],
+                'bank_name': ['bank', 'name'],
+                'bank_ifsc': ['ifsc'],
+                'state': ['state'],
+                'district': ['district'],
+                'city': ['city'],
+                'age_less_than_80': ['less', '80', 'age'],
+                'age_more_than_80': ['more', '80', 'age'],
+                'age_not_available': ['not', 'available', 'age'],
+                'grand_total': ['total', 'grand']
+            };
+            
+            const fieldKeywords = keywords[fieldName] || [];
+            
+            for (const col of columns) {
+                const colNameLower = col.name.toLowerCase();
+                const matches = fieldKeywords.filter(kw => colNameLower.includes(kw)).length;
+                
+                if (matches >= Math.min(2, fieldKeywords.length)) {
+                    select.value = `${col.file}|||${col.sheet}|||${col.index}`;
+                    break;
+                }
+            }
+        }
+
+        async function createDatabase() {
+            const databaseName = document.getElementById('databaseName').value || 'newdatabase.db';
+            const tableName = document.getElementById('tableName').value || 'pensioner_data';
+            
+            // Collect mappings
+            const mappings = [];
+            
+            Object.values(analysisData).forEach(analysis => {
+                analysis.sheets.forEach(sheet => {
+                    const columnMappings = [];
+                    
+                    // Get all mapped fields
+                    const selects = document.querySelectorAll('.mapping-select');
+                    selects.forEach(select => {
+                        if (select.value) {
+                            const [file, sheetName, colIndex] = select.value.split('|||');
+                            
+                            if (file === analysis.fileName && sheetName === sheet.name) {
+                                const fieldName = select.id.replace('map-', '');
+                                const column = sheet.columns.find(c => c.index === parseInt(colIndex));
+                                
+                                if (column) {
+                                    columnMappings.push({
+                                        sourceColumnIndex: column.index,
+                                        sourceColumnName: column.name,
+                                        targetColumn: fieldName,
+                                        dataType: column.dataType
+                                    });
+                                }
+                            }
+                        }
+                    });
+                    
+                    if (columnMappings.length > 0) {
+                        mappings.push({
+                            fileName: analysis.fileName,
+                            filePath: analysis.filePath,
+                            sheetName: sheet.name,
+                            tableName: tableName,
+                            headerRowIndex: sheet.headerRowIndex,
+                            columnMappings: columnMappings
+                        });
+                    }
+                });
+            });
+            
+            if (mappings.length === 0) {
+                alert('Please map at least one column');
+                return;
+            }
+            
+            // Show progress
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('progressFill').style.width = '10%';
+            document.getElementById('progressFill').textContent = '10%';
+            
+            try {
+                const response = await fetch('/api/excel/create-database', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        databaseName: databaseName,
+                        mappings: mappings
+                    })
+                });
+                
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('progressFill').textContent = '100%';
+                
+                const data = await response.json();
+                
+                const resultSection = document.getElementById('resultSection');
+                
+                if (data.success) {
+                    resultSection.innerHTML = `
+                        <div class="alert alert-success">
+                            <h3>✅ Database Created Successfully!</h3>
+                            <p><strong>Database:</strong> ${data.databasePath}</p>
+                            <p><strong>Tables Created:</strong> ${data.tablesCreated}</p>
+                            <p><strong>Records Inserted:</strong> ${data.recordsInserted.toLocaleString()}</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="queryPincodeStats()">
+                            📊 View Pincode Statistics
+                        </button>
+                    `;
+                } else {
+                    resultSection.innerHTML = `
+                        <div class="alert alert-error">
+                            <strong>❌ Error:</strong> ${data.error}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error creating database:', error);
+                document.getElementById('resultSection').innerHTML = `
+                    <div class="alert alert-error">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function queryPincodeStats() {
+            const databaseName = document.getElementById('databaseName').value || 'newdatabase.db';
+            const databasePath = `/data1/jainendra/DLC_backend-main/DLCServer/${databaseName}`;
+            
+            try {
+                const response = await fetch('/api/excel/query-pincode-stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ databasePath: databasePath })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayPincodeStats(data.stats);
+                }
+            } catch (error) {
+                console.error('Error querying stats:', error);
+            }
+        }
+
+        function displayPincodeStats(stats) {
+            const resultSection = document.getElementById('resultSection');
+            
+            let html = `
+                <div class="alert alert-info" style="margin-top: 20px;">
+                    <h3>📊 Pincode Statistics (Top 50)</h3>
+                    <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #667eea; color: white;">
+                                <th style="padding: 10px; text-align: left;">Pincode</th>
+                                <th style="padding: 10px; text-align: right;">Total Pensioners</th>
+                                <th style="padding: 10px; text-align: right;">Age < 80</th>
+                                <th style="padding: 10px; text-align: right;">Age > 80</th>
+                                <th style="padding: 10px; text-align: right;">Banks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            stats.slice(0, 50).forEach((stat, index) => {
+                const bgColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+                html += `
+                    <tr style="background: ${bgColor};">
+                        <td style="padding: 8px;">${stat.pincode}</td>
+                        <td style="padding: 8px; text-align: right;">${stat.totalPensioners.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right;">${stat.ageLess80.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right;">${stat.ageMore80.toLocaleString()}</td>
+                        <td style="padding: 8px; text-align: right;">${stat.banks.length}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            resultSection.innerHTML += html;
+        }
+
+        function resetMapping() {
+            if (confirm('Are you sure you want to reset all mappings?')) {
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

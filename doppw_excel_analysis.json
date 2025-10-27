@@ -1,0 +1,103 @@
+{
+  "fileName": "doppw_data_03102025.xlsx",
+  "fileSize": 336617090,
+  "analyzedAt": "2025-10-13T16:07:16.949Z",
+  "totalSheets": 5,
+  "nonEmptySheets": 1,
+  "totalRows": 28461,
+  "sheets": [
+    {
+      "name": "Export Worksheet",
+      "isEmpty": true,
+      "rowCount": 0,
+      "headers": []
+    },
+    {
+      "name": "Sheet1",
+      "isEmpty": true,
+      "rowCount": 0,
+      "headers": []
+    },
+    {
+      "name": "Sheet2",
+      "isEmpty": true,
+      "rowCount": 0,
+      "headers": []
+    },
+    {
+      "name": "Sheet3",
+      "isEmpty": true,
+      "rowCount": 0,
+      "headers": []
+    },
+    {
+      "name": "Sheet4",
+      "isEmpty": false,
+      "rowCount": 28461,
+      "colCount": 17,
+      "headers": [
+        "GCODE",
+        "ESCROLL_CAT",
+        "GID",
+        "PENSION_TYPE",
+        "BRANCH_CODE",
+        "BRANCH_NAME",
+        "BRANCH_PIN",
+        "BRANCH_STATE",
+        "BIRTH_YEAR",
+        "SUBMITTED_STATUS",
+        "WAIVER_UPTO",
+        "SUBMISSION_MODE",
+        "VERIFICATION_TYPE",
+        "CERTIFICATE_SUBMISSION_DATE",
+        "PENSIONER_PINCODE",
+        "PENSIONER_DISTNAME",
+        "PENSIONER_STATENAME"
+      ],
+      "hasGCODE": true,
+      "hasPPO": false,
+      "hasBranch": true,
+      "hasPension": true,
+      "sampleData": [
+        [
+          "CENTRAL",
+          "RAILWAY",
+          "RAILWAY_12",
+          "F",
+          "11577",
+          "BANDAMUNDA",
+          "770032",
+          "ODISHA",
+          "1978",
+          "First_Year_Waiver",
+          "31-10-2025",
+          "",
+          "",
+          "",
+          "770032",
+          "Sundargarh",
+          "ODISHA"
+        ],
+        [
+          "STATE",
+          "STATE",
+          "PUNJAB_1",
+          "F",
+          "50051",
+          "THE MALL ROAD FARDIKOT",
+          "151203",
+          "PUNJAB",
+          "1976",
+          "SUBMITTED",
+          "",
+          "PLC",
+          "",
+          "06-05-2025",
+          "151203",
+          "Faridkot",
+          "PUNJAB"
+        ]
+      ]
+    }
+  ]
+}

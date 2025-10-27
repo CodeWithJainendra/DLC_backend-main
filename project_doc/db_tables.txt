@@ -1,0 +1,58 @@
+-- Create table for live API data
+CREATE TABLE pensioner_live_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    PPO TEXT,
+    central_govt_pensioner_type TEXT,
+    disbursing_agency TEXT,
+    disbursing_authority TEXT,
+    pensioner_DLC_type TEXT,
+    pensioner_YearOfBirth TEXT,
+    pensioner_district TEXT,
+    pensioner_pin TEXT,
+    pensioner_state TEXT,
+    type_of_pensioner TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create table for API fetch logs
+CREATE TABLE api_fetch_logs (
+    log_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fetch_date DATE NOT NULL,
+    action_successful BOOLEAN NOT NULL,
+    error_message TEXT,
+    records_count INTEGER DEFAULT 0,
+    pensioner_data_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (pensioner_data_id) REFERENCES pensioner_live_data(id)
+);
+
+-- Create SQLite table for pensioner bank static details
+CREATE TABLE pensioner_bank_master (
+    bank_name TEXT,
+    branch_name TEXT,
+    branch_postcode TEXT,
+    pensioner_city TEXT,
+    state TEXT,
+    pensioner_postcode TEXT,
+    PDA TEXT,
+    ppo_number TEXT,
+    PSA TEXT
+);
+
+
+
+
+
+# seeding database command 
+
+python insert_pensioner_data.py static_data/BOB_data.xlsx DLC_Database.db \
+    --bank_name "PDA and  name of disbursing bank" \
+    --branch_name "BRANCH_NAME" \
+    --branch_postcode "BRANCH_PIN" \
+    --pensioner_city "Pensioner CITY" \
+    --state "STATE" \
+    --pensioner_postcode "Pensioner POST_CODE" \
+    --pda "PDA and  name of disbursing bank" \
+    --ppo_number "PPO NUMBER"
+    --psa "PSA" \
+    --pensioner_dob "DOB REGULAR" \

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLC Login - Pension Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .login-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #2563eb;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .success-message {
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="login-bg min-h-screen flex items-center justify-center p-4">
+    <div class="login-card rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <i class="fas fa-shield-alt text-4xl text-blue-600 mb-4"></i>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">DLC Pension Dashboard</h1>
+            <p class="text-gray-600">Secure Authentication Portal</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="flex mb-6 bg-gray-100 rounded-lg p-1">
+            <button type="button" id="passwordTab" class="tab-button active flex-1 py-2 px-4 rounded-md font-medium text-sm">
+                <i class="fas fa-key mr-2"></i>Password
+            </button>
+            <button type="button" id="otpTab" class="tab-button flex-1 py-2 px-4 rounded-md font-medium text-sm">
+                <i class="fas fa-mobile-alt mr-2"></i>OTP
+            </button>
+        </div>
+
+        <!-- Password Login Form -->
+        <div id="passwordContent" class="tab-content active">
+            <form id="passwordLoginForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user mr-2"></i>Username
+                    </label>
+                    <input type="text" id="username" name="username" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                           placeholder="Enter your username">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-2"></i>Password
+                    </label>
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                           placeholder="Enter your password">
+                </div>
+
+                <button type="submit" id="passwordLoginBtn" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    <span id="passwordLoginBtnText">Login</span>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center text-sm text-gray-600">
+                <p class="mb-2">Test Credentials:</p>
+                <p><strong>Username:</strong> admin</p>
+                <p><strong>Password:</strong> Admin@123456</p>
+            </div>
+        </div>
+
+        <!-- OTP Login Form -->
+        <div id="otpContent" class="tab-content">
+            <form id="otpLoginForm" class="space-y-6">
+                <div>
+                    <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-phone mr-2"></i>Phone Number
+                    </label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                           placeholder="919876543210"
+                           pattern="91[6-9][0-9]{9}"
+                           maxlength="12">
+                    <p class="text-xs text-gray-500 mt-1">Format: 91XXXXXXXXXX (Indian numbers only)</p>
+                </div>
+
+                <div id="otpInputGroup" class="hidden">
+                    <label for="otpCode" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-2"></i>Enter OTP
+                    </label>
+                    <input type="text" id="otpCode" name="otpCode"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-center text-2xl tracking-widest"
+                           placeholder="000000"
+                           maxlength="6"
+                           pattern="[0-9]{6}">
+                    <p class="text-xs text-gray-500 mt-1">OTP valid for 4 minutes</p>
+                </div>
+
+                <button type="button" id="sendOtpBtn" 
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    <span id="sendOtpBtnText">Send OTP</span>
+                </button>
+
+                <button type="submit" id="verifyOtpBtn" 
+                        class="hidden w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span id="verifyOtpBtnText">Verify & Login</span>
+                </button>
+
+                <button type="button" id="resendOtpBtn" 
+                        class="hidden w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
+                    <i class="fas fa-redo mr-2"></i>
+                    <span id="resendOtpBtnText">Resend OTP</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successMessage" class="hidden mt-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg success-message">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span id="successText"></span>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span id="errorText"></span>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        const passwordTab = document.getElementById('passwordTab');
+        const otpTab = document.getElementById('otpTab');
+        const passwordContent = document.getElementById('passwordContent');
+        const otpContent = document.getElementById('otpContent');
+
+        passwordTab.addEventListener('click', () => {
+            passwordTab.classList.add('active');
+            otpTab.classList.remove('active');
+            passwordContent.classList.add('active');
+            otpContent.classList.remove('active');
+            hideMessages();
+        });
+
+        otpTab.addEventListener('click', () => {
+            otpTab.classList.add('active');
+            passwordTab.classList.remove('active');
+            otpContent.classList.add('active');
+            passwordContent.classList.remove('active');
+            hideMessages();
+        });
+
+        // Password Login
+        document.getElementById('passwordLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('passwordLoginBtn');
+            const loginBtnText = document.getElementById('passwordLoginBtnText');
+            
+            hideMessages();
+            loginBtn.disabled = true;
+            loginBtnText.textContent = 'Logging in...';
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('authToken', data.data.token);
+                    localStorage.setItem('userInfo', JSON.stringify(data.data.user));
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = '/public/excel-upload.html';
+                    }, 1000);
+                } else {
+                    showError(data.error || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtnText.textContent = 'Login';
+            }
+        });
+
+        // OTP Login - Send OTP
+        let otpSentTime = null;
+        let resendTimer = null;
+
+        document.getElementById('sendOtpBtn').addEventListener('click', async function() {
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const sendOtpBtn = document.getElementById('sendOtpBtn');
+            const sendOtpBtnText = document.getElementById('sendOtpBtnText');
+            
+            if (!phoneNumber || !phoneNumber.match(/^91[6-9][0-9]{9}$/)) {
+                showError('Please enter a valid Indian phone number (Format: 919876543210)');
+                return;
+            }
+            
+            hideMessages();
+            sendOtpBtn.disabled = true;
+            sendOtpBtnText.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('OTP sent successfully! Check your phone.');
+                    otpSentTime = Date.now();
+                    
+                    // Show OTP input and verify button
+                    document.getElementById('otpInputGroup').classList.remove('hidden');
+                    document.getElementById('verifyOtpBtn').classList.remove('hidden');
+                    document.getElementById('sendOtpBtn').classList.add('hidden');
+                    document.getElementById('resendOtpBtn').classList.remove('hidden');
+                    document.getElementById('phoneNumber').disabled = true;
+                    
+                    // Start resend timer
+                    startResendTimer();
+                } else {
+                    showError(data.error || 'Failed to send OTP');
+                }
+            } catch (error) {
+                console.error('Send OTP error:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                sendOtpBtn.disabled = false;
+                sendOtpBtnText.textContent = 'Send OTP';
+            }
+        });
+
+        // OTP Login - Verify OTP
+        document.getElementById('otpLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const otp = document.getElementById('otpCode').value;
+            const verifyBtn = document.getElementById('verifyOtpBtn');
+            const verifyBtnText = document.getElementById('verifyOtpBtnText');
+            
+            if (!otp || otp.length !== 6) {
+                showError('Please enter a valid 6-digit OTP');
+                return;
+            }
+            
+            hideMessages();
+            verifyBtn.disabled = true;
+            verifyBtnText.textContent = 'Verifying...';
+            
+            try {
+                const response = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber, otp })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('authToken', data.data.token);
+                    localStorage.setItem('userInfo', JSON.stringify(data.data.user));
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = '/public/excel-upload.html';
+                    }, 1000);
+                } else {
+                    showError(data.error || 'Invalid OTP');
+                }
+            } catch (error) {
+                console.error('Verify OTP error:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtnText.textContent = 'Verify & Login';
+            }
+        });
+
+        // Resend OTP
+        document.getElementById('resendOtpBtn').addEventListener('click', function() {
+            // Reset form
+            document.getElementById('phoneNumber').disabled = false;
+            document.getElementById('otpInputGroup').classList.add('hidden');
+            document.getElementById('verifyOtpBtn').classList.add('hidden');
+            document.getElementById('sendOtpBtn').classList.remove('hidden');
+            document.getElementById('resendOtpBtn').classList.add('hidden');
+            document.getElementById('otpCode').value = '';
+            
+            if (resendTimer) {
+                clearInterval(resendTimer);
+            }
+        });
+
+        // Resend timer
+        function startResendTimer() {
+            let seconds = 60;
+            const resendBtn = document.getElementById('resendOtpBtn');
+            const resendBtnText = document.getElementById('resendOtpBtnText');
+            
+            resendBtn.disabled = true;
+            
+            resendTimer = setInterval(() => {
+                seconds--;
+                resendBtnText.textContent = `Resend OTP (${seconds}s)`;
+                
+                if (seconds <= 0) {
+                    clearInterval(resendTimer);
+                    resendBtn.disabled = false;
+                    resendBtnText.textContent = 'Resend OTP';
+                }
+            }, 1000);
+        }
+
+        // Helper functions
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => errorMessage.classList.add('hidden'), 5000);
+        }
+
+        function showSuccess(message) {
+            const successMessage = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            successText.textContent = message;
+            successMessage.classList.remove('hidden');
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+        }
+
+        // Check if already logged in
+        if (localStorage.getItem('authToken')) {
+            window.location.href = '/public/excel-upload.html';
+        }
+
+        // Auto-format phone number input
+        document.getElementById('phoneNumber').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 12) value = value.substring(0, 12);
+            e.target.value = value;
+        });
+
+        // Auto-format OTP input
+        document.getElementById('otpCode').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 6) value = value.substring(0, 6);
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>

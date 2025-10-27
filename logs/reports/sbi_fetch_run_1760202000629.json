@@ -1,0 +1,27 @@
+{
+  "id": "run_1760202000629",
+  "startTime": 1760202000629,
+  "date": "11-10-2025",
+  "states": [],
+  "totalStates": 36,
+  "successfulStates": 36,
+  "failedStates": 0,
+  "totalRecords": 0,
+  "errors": [],
+  "endTime": 1760202095125,
+  "duration": 94496,
+  "timestamp": "2025-10-11T17:01:35.127Z",
+  "config": {
+    "schedule": "30 22 * * *",
+    "retryConfig": {
+      "maxAttempts": 3,
+      "delayBetweenAttempts": 5000,
+      "exponentialBackoff": true
+    },
+    "batchConfig": {
+      "statesPerBatch": 5,
+      "delayBetweenBatches": 10000,
+      "maxConcurrentRequests": 3
+    }
+  }
+}

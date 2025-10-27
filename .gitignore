@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+.venv/
+venv/
+my_env/
+*.egg-info/
+*.dist-info/
+pip-wheel-metadata/
+build/
+dist/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors/IDE
+.vscode/
+.idea/
+
+# Env files
+.env
+.env.*
+*.env
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+*.sqbpro
+
+# Logs & outputs
+*.log
+server.log
+out.json
+
+# Large sample data
+static_data/**/*.xlsx
+
+
+EXCEL_DATA/
+
+pensioner_data_analysis_*.xlsx
+DLCServer/**/*.xlsx
+DLCServer/*.xlsx
+
+DLCServer/*.db
+updated_db/*.db
+manual_lcs_data/
+updated_db/*.xlsx
+updated_db/mapping.json
+

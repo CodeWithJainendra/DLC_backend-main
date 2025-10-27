@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLC Pension Data Upload</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #007bff;
+            background-color: #f0f2ff;
+        }
+
+        .upload-icon {
+            font-size: 2em;
+            color: #ddd;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn.upload-btn {
+            background: #28a745;
+        }
+
+        .btn.upload-btn:hover {
+            background: #1e7e34;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 15px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #007bff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+            font-size: 0.9em;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .file-info {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            display: none;
+            font-size: 0.9em;
+        }
+
+        .info-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .info-section h3 {
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+
+        .format-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .format-icon {
+            width: 30px;
+            height: 30px;
+            background: #007bff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+            margin-right: 10px;
+        }
+
+        .format-details h4 {
+            color: #333;
+            font-size: 0.9em;
+            margin-bottom: 2px;
+        }
+
+        .format-details p {
+            color: #666;
+            font-size: 0.8em;
+        }
+
+        .database-status {
+            margin-top: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9em;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .status-value {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 DLC Pension Data Upload</h1>
+            <p>Upload Excel files to automatically insert pensioner data into the database</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">
+                        <strong>Click to select file</strong> or drag and drop your Excel file here
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx" />
+                    <button class="btn" id="chooseFileBtn">
+                        Choose File
+                    </button>
+                </div>
+
+                <div class="file-info" id="fileInfo">
+                    <h4>Selected File:</h4>
+                    <p id="fileName"></p>
+                    <p id="fileSize"></p>
+                </div>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="progressText">Processing...</p>
+                </div>
+
+                <div class="status" id="status"></div>
+            </div>
+
+            <div class="info-section">
+                <h3>📋 Supported Formats</h3>
+                <div class="format-item">
+                    <div class="format-icon">BOB</div>
+                    <div class="format-details">
+                        <h4>BOB Pensioners Data</h4>
+                        <p>Bank of Baroda pensioner data files</p>
+                    </div>
+                </div>
+                <div class="format-item">
+                    <div class="format-icon">UBI</div>
+                    <div class="format-details">
+                        <h4>Union Bank of India Data</h4>
+                        <p>UBI pensioner data files</p>
+                    </div>
+                </div>
+                <div class="format-item">
+                    <div class="format-icon">📊</div>
+                    <div class="format-details">
+                        <h4>Dashboard DLC Data</h4>
+                        <p>Dashboard pensioner data files</p>
+                    </div>
+                </div>
+
+                <div class="database-status">
+                    <h3>📈 Database Status</h3>
+                    <div id="statusContent">
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const chooseFileBtn = document.getElementById('chooseFileBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const status = document.getElementById('status');
+        const databaseStatus = document.getElementById('databaseStatus');
+        const statusContent = document.getElementById('statusContent');
+
+        // Load database status on page load
+        loadDatabaseStatus();
+
+        // File input change handler
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Choose file button handler
+        chooseFileBtn.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                displayFileInfo(file);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.name.toLowerCase().endsWith('.xlsx')) {
+                    fileInput.files = files;
+                    displayFileInfo(file);
+                } else {
+                    showStatus('Please select a .xlsx file', 'error');
+                }
+            }
+        }
+
+        function displayFileInfo(file) {
+            fileName.textContent = file.name;
+            fileSize.textContent = `Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            fileInfo.style.display = 'block';
+            
+            // Remove existing upload button if any
+            const existingBtn = uploadArea.querySelector('.upload-btn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            
+            // Show upload button
+            const uploadBtn = document.createElement('button');
+            uploadBtn.className = 'btn upload-btn';
+            uploadBtn.textContent = 'Upload & Process';
+            uploadBtn.onclick = () => uploadFile(file);
+            uploadArea.appendChild(uploadBtn);
+        }
+
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('excelFile', file);
+
+            // Show progress
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Uploading file...';
+
+            try {
+                const response = await fetch('/api/upload/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    progressFill.style.width = '100%';
+                    progressText.textContent = 'Processing complete!';
+                    
+                    showStatus(`
+                        ✅ File processed successfully!<br>
+                        <strong>Format:</strong> ${result.data.detectedFormat}<br>
+                        <strong>Rows inserted:</strong> ${result.data.rowsInserted.toLocaleString()}
+                    `, 'success');
+                    
+                    // Reload database status
+                    loadDatabaseStatus();
+                } else {
+                    showStatus(`❌ Error: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Upload failed: ${error.message}`, 'error');
+            }
+
+            // Hide progress after 3 seconds
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 3000);
+        }
+
+        function showStatus(message, type) {
+            status.innerHTML = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            // Hide after 5 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        async function loadDatabaseStatus() {
+            try {
+                const response = await fetch('/api/upload/status');
+                const result = await response.json();
+
+                if (result.success) {
+                    const data = result.data;
+                    statusContent.innerHTML = `
+                        <div class="status-item">
+                            <span class="status-label">Total Records:</span>
+                            <span class="status-value">${data.totalRecords.toLocaleString()}</span>
+                        </div>
+                        ${data.banks.map(bank => `
+                            <div class="status-item">
+                                <span class="status-label">${bank.name}:</span>
+                                <span class="status-value">${bank.count.toLocaleString()} records</span>
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    statusContent.innerHTML = '<p>Error loading database status</p>';
+                }
+            } catch (error) {
+                statusContent.innerHTML = '<p>Error loading database status</p>';
+            }
+        }
+    </script>
+</body>
+</html>

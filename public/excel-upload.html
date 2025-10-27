@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLC Excel Data Upload & Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-area.dragover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .table-preview {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .analysis-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .success-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .error-card {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b-4 border-blue-500">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-database text-blue-600 text-3xl mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">DLC Excel Data Upload & Analysis</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600" id="userInfo">Loading...</span>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <!-- Upload Section -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="fas fa-cloud-upload-alt text-blue-500 mr-3"></i>
+                Upload Excel File for Analysis
+            </h2>
+            
+            <!-- File Upload Area -->
+            <div id="uploadArea" class="upload-area rounded-lg p-12 text-center mb-6">
+                <div id="uploadContent">
+                    <i class="fas fa-file-excel text-6xl text-green-500 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Drop your Excel file here</h3>
+                    <p class="text-gray-500 mb-4">or click to browse files</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
+                    <button onclick="document.getElementById('fileInput').click()" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>Choose File
+                    </button>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div id="progressContainer" class="hidden mt-6">
+                    <div class="bg-gray-200 rounded-full h-4 mb-2">
+                        <div id="progressBar" class="progress-bar bg-blue-500 h-4 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="progressText" class="text-sm text-gray-600">Uploading...</p>
+                </div>
+            </div>
+
+            <!-- File Info -->
+            <div id="fileInfo" class="hidden bg-gray-50 rounded-lg p-4 mb-6">
+                <h4 class="font-semibold text-gray-700 mb-2">Selected File:</h4>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-excel text-green-500 mr-2"></i>
+                        <span id="fileName" class="text-gray-800"></span>
+                        <span id="fileSize" class="text-gray-500 ml-2"></span>
+                    </div>
+                    <button onclick="analyzeFile()" id="analyzeBtn" 
+                            class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-search mr-2"></i>Analyze & Insert
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="analysisResults" class="hidden">
+            <!-- Analysis Summary -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-chart-line text-purple-500 mr-3"></i>
+                    Analysis Results
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Total Records -->
+                    <div class="analysis-card text-white p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-white opacity-80">Total Records</p>
+                                <p id="totalRecords" class="text-3xl font-bold">0</p>
+                            </div>
+                            <i class="fas fa-database text-4xl opacity-80"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Detected Tables -->
+                    <div class="success-card text-white p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-white opacity-80">Detected Tables</p>
+                                <p id="detectedTables" class="text-3xl font-bold">0</p>
+                            </div>
+                            <i class="fas fa-table text-4xl opacity-80"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Processing Status -->
+                    <div id="statusCard" class="success-card text-white p-6 rounded-xl">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-white opacity-80">Status</p>
+                                <p id="processingStatus" class="text-xl font-bold">Processing...</p>
+                            </div>
+                            <i id="statusIcon" class="fas fa-spinner fa-spin text-4xl opacity-80"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Mapping -->
+                <div id="tableMappingSection" class="hidden">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Data Mapping Analysis</h3>
+                    <div id="tableMappingResults" class="space-y-4">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Preview -->
+            <div id="dataPreviewSection" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-eye text-blue-500 mr-3"></i>
+                    Data Preview
+                </h2>
+                <div id="dataPreview" class="table-preview">
+                    <!-- Dynamic table content will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Insertion Results -->
+            <div id="insertionResults" class="hidden bg-white rounded-xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                    Database Insertion Results
+                </h2>
+                <div id="insertionSummary" class="space-y-4">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+            <div class="text-center">
+                <i class="fas fa-cog fa-spin text-4xl text-blue-500 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Processing Your Data</h3>
+                <p id="loadingText" class="text-gray-600">Analyzing Excel file structure...</p>
+                <div class="mt-4 bg-gray-200 rounded-full h-2">
+                    <div id="modalProgressBar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="excel-upload.js"></script>
+</body>
+</html>

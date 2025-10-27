@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Banks Analysis - API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .filters {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .filters input, .filters select, .filters button {
+            margin: 5px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .filters button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .filters button:hover {
+            background: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .bank-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #fff;
+        }
+        .bank-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .bank-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .stat {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .summary {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏦 Top Banks Analysis for Choropleth</h1>
+        <p>Test the new API endpoint: <code>/api/choropleth/top-banks-analysis</code></p>
+        
+        <div class="filters">
+            <h3>Filters</h3>
+            <input type="text" id="stateFilter" placeholder="State name (e.g., Maharashtra)" />
+            <input type="number" id="limitFilter" placeholder="Limit (default: 10)" value="10" min="1" max="50" />
+            <label>
+                <input type="checkbox" id="includeBranches" /> Include Branch Details
+            </label>
+            <button onclick="fetchTopBanks()">Get Top Banks</button>
+            <button onclick="clearResults()">Clear</button>
+        </div>
+
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        async function fetchTopBanks() {
+            const stateFilter = document.getElementById('stateFilter').value.trim();
+            const limit = document.getElementById('limitFilter').value || 10;
+            const includeBranches = document.getElementById('includeBranches').checked;
+            
+            const params = new URLSearchParams();
+            if (stateFilter) params.append('state_filter', stateFilter);
+            params.append('limit', limit);
+            params.append('include_branches', includeBranches);
+            
+            const url = `/api/choropleth/top-banks-analysis?${params.toString()}`;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">Loading top banks data...</div>';
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    resultsDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="summary">
+                    <h3>📊 Summary</h3>
+                    <p><strong>Filter Applied:</strong> ${data.filters_applied.state_filter === 'all' ? 'All States' : data.filters_applied.state_filter}</p>
+                    <p><strong>Results:</strong> ${data.summary.total_banks_shown} banks, ${data.summary.total_pensioners_in_results.toLocaleString()} pensioners, ${data.summary.total_branches_in_results.toLocaleString()} branches</p>
+                    <p><strong>States Covered:</strong> ${data.summary.states_covered}</p>
+                </div>
+            `;
+            
+            if (data.top_banks_by_state && data.top_banks_by_state.length > 0) {
+                html += '<h3>🏆 Top Banks by State</h3>';
+                data.top_banks_by_state.forEach(bank => {
+                    html += `
+                        <div class="bank-card">
+                            <div class="bank-name">${bank.bank_name} - ${bank.bank_state}</div>
+                            <div class="bank-stats">
+                                <div class="stat">
+                                    <div class="stat-value">${bank.total_pensioners.toLocaleString()}</div>
+                                    <div class="stat-label">Total Pensioners</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${bank.branch_count.toLocaleString()}</div>
+                                    <div class="stat-label">Branches</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${bank.avg_pensioners_per_branch}</div>
+                                    <div class="stat-label">Avg per Branch</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${bank.pensioners_under_80.toLocaleString()}</div>
+                                    <div class="stat-label">Under 80</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${bank.pensioners_over_80.toLocaleString()}</div>
+                                    <div class="stat-label">Over 80</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            if (data.overall_top_banks && data.overall_top_banks.length > 0) {
+                html += '<h3>🌍 Overall Top Banks (All States)</h3>';
+                data.overall_top_banks.forEach(bank => {
+                    html += `
+                        <div class="bank-card">
+                            <div class="bank-name">${bank.bank_name}</div>
+                            <div class="bank-stats">
+                                <div class="stat">
+                                    <div class="stat-value">${bank.total_pensioners.toLocaleString()}</div>
+                                    <div class="stat-label">Total Pensioners</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${bank.total_branches.toLocaleString()}</div>
+                                    <div class="stat-label">Total Branches</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${bank.states_present}</div>
+                                    <div class="stat-label">States Present</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${bank.avg_pensioners_per_branch}</div>
+                                    <div class="stat-label">Avg per Branch</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('stateFilter').value = '';
+            document.getElementById('limitFilter').value = '10';
+            document.getElementById('includeBranches').checked = false;
+        }
+        
+        // Load default data on page load
+        window.onload = () => {
+            fetchTopBanks();
+        };
+    </script>
+</body>
+</html>

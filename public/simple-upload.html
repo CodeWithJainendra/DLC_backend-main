@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Upload - DLC Database</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .upload-area.dragover {
+            border-color: #4299e1;
+            background-color: #ebf8ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Simple Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-semibold text-gray-800">
+                    <i class="fas fa-file-excel text-green-500 mr-2"></i>
+                    Excel Upload
+                </h1>
+                <button onclick="logout()" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8 max-w-2xl">
+        <!-- Upload Card -->
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h2 class="text-lg font-medium text-gray-800 mb-6 text-center">
+                Upload Excel File
+            </h2>
+            
+            <!-- File Upload Area -->
+            <div id="uploadArea" class="upload-area rounded-lg p-12 text-center mb-6">
+                <div id="uploadContent">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-blue-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Drop Excel file here</h3>
+                    <p class="text-gray-500 mb-4">or click to browse</p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
+                    <button onclick="document.getElementById('fileInput').click()" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg">
+                        Choose File
+                    </button>
+                </div>
+            </div>
+
+            <!-- Selected File Info -->
+            <div id="fileInfo" class="hidden bg-gray-50 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-excel text-green-500 mr-2"></i>
+                        <span id="fileName" class="text-gray-800"></span>
+                    </div>
+                    <button onclick="uploadFile()" id="uploadBtn" 
+                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-upload mr-1"></i>Upload
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div id="progressContainer" class="hidden mb-6">
+                <div class="bg-gray-200 rounded-full h-3 mb-2">
+                    <div id="progressBar" class="bg-blue-500 h-3 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+                <p id="progressText" class="text-sm text-gray-600 text-center">Processing...</p>
+            </div>
+
+            <!-- Result -->
+            <div id="resultContainer" class="hidden">
+                <div id="successResult" class="hidden bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        <span class="text-green-800 font-medium">File uploaded successfully!</span>
+                    </div>
+                    <p id="successMessage" class="text-green-700 text-sm mt-2"></p>
+                </div>
+
+                <div id="errorResult" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                        <span class="text-red-800 font-medium">Upload failed</span>
+                    </div>
+                    <p id="errorMessage" class="text-red-700 text-sm mt-2"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        let selectedFile = null;
+
+        // Check authentication
+        if (!authToken) {
+            window.location.href = '/public/login.html';
+        }
+
+        // Setup drag and drop
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            // Validate file type
+            const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                               'application/vnd.ms-excel', 'text/csv'];
+            
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+                showError('Please select a valid Excel file (.xlsx, .xls) or CSV file');
+                return;
+            }
+
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileInfo').classList.remove('hidden');
+            document.getElementById('resultContainer').classList.add('hidden');
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('excelFile', selectedFile);
+
+            // Show progress
+            document.getElementById('progressContainer').classList.remove('hidden');
+            document.getElementById('uploadBtn').disabled = true;
+
+            try {
+                const response = await fetch('/api/excel/analyze-and-insert', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess(`File processed successfully! ${result.data.totalRecords} records processed.`);
+                } else {
+                    showError(result.error || 'Upload failed');
+                }
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showError('Network error. Please try again.');
+            } finally {
+                document.getElementById('progressContainer').classList.add('hidden');
+                document.getElementById('uploadBtn').disabled = false;
+                // Reset for next upload
+                selectedFile = null;
+                document.getElementById('fileInfo').classList.add('hidden');
+                document.getElementById('fileInput').value = '';
+            }
+        }
+
+        function showSuccess(message) {
+            document.getElementById('resultContainer').classList.remove('hidden');
+            document.getElementById('successResult').classList.remove('hidden');
+            document.getElementById('errorResult').classList.add('hidden');
+            document.getElementById('successMessage').textContent = message;
+        }
+
+        function showError(message) {
+            document.getElementById('resultContainer').classList.remove('hidden');
+            document.getElementById('errorResult').classList.remove('hidden');
+            document.getElementById('successResult').classList.add('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.href = '/public/login.html';
+        }
+    </script>
+</body>
+</html>

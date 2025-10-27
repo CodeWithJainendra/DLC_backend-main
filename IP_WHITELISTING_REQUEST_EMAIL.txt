@@ -1,0 +1,36 @@
+To: anil.bansal@gov.in
+Cc: srutis@cse.iitk.ac.in
+Subject: IP Whitelisting Request for Jeevan Pramaan API Access
+
+Dear Sh. Anil Bansal Sir,
+
+Thank you for providing the Jeevan Pramaan API specifications.
+
+We have set up the integration on our server and are ready to test the API. However, we are currently receiving a 403 Forbidden error, which indicates that our IP address needs to be whitelisted.
+
+Please whitelist the following IP address to enable access to the Jeevan Pramaan API:
+
+**IP Address to Whitelist**: 103.246.106.145
+
+**Purpose**: Integration with DLC Portal (IIT Kanpur) for pensioner data synchronization and Digital Life Certificate management.
+
+**API Endpoint**: https://ipension.nic.in/JPWrapper/
+
+Once the IP is whitelisted, we will:
+1. Test the API with the date 05.11.2024 as suggested
+2. Verify the data structure and payload handling (~300 MB, ~7 lakh records)
+3. Complete the integration with our existing DLC system
+4. Provide a detailed test report
+
+Please let us know once the IP whitelisting is complete so we can proceed with testing.
+
+Thank you for your support.
+
+With Regards,
+[Your Name]
+IIT Kanpur
+
+---
+Contact Details (if needed):
+- Sh. Priyranjan Sharma, Sr. Developer - 6394457028
+- Sh. Arvind Kumar, Sr. Developer - 8909175628

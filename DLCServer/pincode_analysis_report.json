@@ -1,0 +1,873 @@
+{
+  "generated_at": "2025-10-22T16:34:46.118331",
+  "summary": {
+    "total_unique_pincodes": 35485,
+    "total_records": 5408492,
+    "total_pensioners": 1049686,
+    "total_states": 80,
+    "total_districts": 582
+  },
+  "top_states": [
+    {
+      "state": "GUJARAT",
+      "pincodes": 1527,
+      "pensioners": 132978,
+      "banks": 1154
+    },
+    {
+      "state": "UTTARPRADESH",
+      "pincodes": 1261,
+      "pensioners": 87661,
+      "banks": 2238
+    },
+    {
+      "state": "MAHARASHTRA",
+      "pincodes": 1230,
+      "pensioners": 70976,
+      "banks": 1382
+    },
+    {
+      "state": "WEST BENGAL",
+      "pincodes": 789,
+      "pensioners": 67164,
+      "banks": 740
+    },
+    {
+      "state": "TAMILNADU",
+      "pincodes": 374,
+      "pensioners": 61627,
+      "banks": 561
+    },
+    {
+      "state": "PUNJAB",
+      "pincodes": 1339,
+      "pensioners": 55235,
+      "banks": 229
+    },
+    {
+      "state": "LAKHSWADEEP",
+      "pincodes": 660,
+      "pensioners": 49557,
+      "banks": 1309
+    },
+    {
+      "state": "KERALA",
+      "pincodes": 988,
+      "pensioners": 42682,
+      "banks": 776
+    },
+    {
+      "state": "TELANGANA",
+      "pincodes": 373,
+      "pensioners": 35154,
+      "banks": 337
+    },
+    {
+      "state": "ANDRA PRADESH",
+      "pincodes": 630,
+      "pensioners": 32313,
+      "banks": 822
+    },
+    {
+      "state": "RAJASTHAN",
+      "pincodes": 1005,
+      "pensioners": 26275,
+      "banks": 907
+    },
+    {
+      "state": "ASSAM",
+      "pincodes": 1090,
+      "pensioners": 24299,
+      "banks": 162
+    },
+    {
+      "state": "MEGHALAYA",
+      "pincodes": 117,
+      "pensioners": 15877,
+      "banks": 264
+    },
+    {
+      "state": "BIHAR",
+      "pincodes": 814,
+      "pensioners": 14788,
+      "banks": 810
+    },
+    {
+      "state": "MADHYA PRADESH",
+      "pincodes": 2903,
+      "pensioners": 14651,
+      "banks": 3043
+    },
+    {
+      "state": "CHANDIGARH",
+      "pincodes": 21,
+      "pensioners": 11762,
+      "banks": 26
+    },
+    {
+      "state": "JAMMU AND KASHMIR",
+      "pincodes": 228,
+      "pensioners": 8206,
+      "banks": 36
+    },
+    {
+      "state": "GOA",
+      "pincodes": 198,
+      "pensioners": 7226,
+      "banks": 328
+    },
+    {
+      "state": "TAMIL NADU",
+      "pincodes": 506,
+      "pensioners": 7214,
+      "banks": 77
+    },
+    {
+      "state": "HIMACHAL PRADESH",
+      "pincodes": 264,
+      "pensioners": 7171,
+      "banks": 156
+    }
+  ],
+  "top_districts": [
+    {
+      "state": "TAMILNADU",
+      "district": "CHENNAI",
+      "pincodes": 19,
+      "pensioners": 48052
+    },
+    {
+      "state": "MAHARASHTRA",
+      "district": "MUMBAI",
+      "pincodes": 18,
+      "pensioners": 39536
+    },
+    {
+      "state": "nan",
+      "district": "BANGALORE",
+      "pincodes": 24,
+      "pensioners": 36411
+    },
+    {
+      "state": "nan",
+      "district": "NEW DELHI",
+      "pincodes": 17,
+      "pensioners": 26120
+    },
+    {
+      "state": "KERALA",
+      "district": "TRIVANDRUM",
+      "pincodes": 6,
+      "pensioners": 24282
+    },
+    {
+      "state": "WEST BENGAL",
+      "district": "KOLKATA",
+      "pincodes": 26,
+      "pensioners": 20721
+    },
+    {
+      "state": "TELANGANA",
+      "district": "HYDERABAD",
+      "pincodes": 19,
+      "pensioners": 20635
+    },
+    {
+      "state": "WEST BENGAL",
+      "district": "MADAGASCAR                              ",
+      "pincodes": 1,
+      "pensioners": 20357
+    },
+    {
+      "state": "UTTARPRADESH",
+      "district": "LUCKNOW",
+      "pincodes": 9,
+      "pensioners": 17826
+    },
+    {
+      "state": "nan",
+      "district": "KOLKATA",
+      "pincodes": 12,
+      "pensioners": 17129
+    },
+    {
+      "state": "RAJASTHAN",
+      "district": "JAIPUR",
+      "pincodes": 8,
+      "pensioners": 15322
+    },
+    {
+      "state": "CHANDIGARH",
+      "district": "MOHALI",
+      "pincodes": 1,
+      "pensioners": 11207
+    },
+    {
+      "state": "GUJARAT",
+      "district": "AHMEDABAD",
+      "pincodes": 9,
+      "pensioners": 10241
+    },
+    {
+      "state": "LAKHSWADEEP",
+      "district": "PATNA",
+      "pincodes": 1,
+      "pensioners": 10068
+    },
+    {
+      "state": "UTTARPRADESH",
+      "district": "MEERUT                                  ",
+      "pincodes": 2,
+      "pensioners": 9495
+    },
+    {
+      "state": "MEGHALAYA",
+      "district": "MUMBAI",
+      "pincodes": 27,
+      "pensioners": 8159
+    },
+    {
+      "state": "ASSAM",
+      "district": "GUWAHATI",
+      "pincodes": 5,
+      "pensioners": 7822
+    },
+    {
+      "state": "nan",
+      "district": "BHUBANESWAR",
+      "pincodes": 3,
+      "pensioners": 6585
+    },
+    {
+      "state": "GUJARAT",
+      "district": "VADODARA",
+      "pincodes": 10,
+      "pensioners": 6319
+    },
+    {
+      "state": "PUNJAB",
+      "district": "AMBALA CANTT",
+      "pincodes": 1,
+      "pensioners": 6082
+    },
+    {
+      "state": "nan",
+      "district": "RANCHI",
+      "pincodes": 3,
+      "pensioners": 5197
+    },
+    {
+      "state": "nan",
+      "district": "CIVIL LINES JABALPUR",
+      "pincodes": 1,
+      "pensioners": 5162
+    },
+    {
+      "state": "UTTARPRADESH",
+      "district": "NEW DELHI",
+      "pincodes": 13,
+      "pensioners": 5034
+    },
+    {
+      "state": "nan",
+      "district": "RAIPUR",
+      "pincodes": 2,
+      "pensioners": 4735
+    },
+    {
+      "state": "UTTARPRADESH",
+      "district": "CHENNAI",
+      "pincodes": 19,
+      "pensioners": 4295
+    },
+    {
+      "state": "JAMMU AND KASHMIR",
+      "district": "JAMMU",
+      "pincodes": 3,
+      "pensioners": 3668
+    },
+    {
+      "state": "nan",
+      "district": "AMRITSAR",
+      "pincodes": 1,
+      "pensioners": 3555
+    },
+    {
+      "state": "UTTARPRADESH",
+      "district": "DEHRADUN",
+      "pincodes": 1,
+      "pensioners": 3473
+    },
+    {
+      "state": "GOA",
+      "district": "NEW DELHI",
+      "pincodes": 18,
+      "pensioners": 3296
+    },
+    {
+      "state": "GUJARAT",
+      "district": "BHAVNAGAR",
+      "pincodes": 3,
+      "pensioners": 3010
+    }
+  ],
+  "top_pincodes": [
+    {
+      "pincode": "600028",
+      "state": "TAMILNADU",
+      "district": "CHENNAI",
+      "city": "CHENNAI",
+      "pensioners": 45220,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "400054",
+      "state": "MAHARASHTRA",
+      "district": "MUMBAI",
+      "city": "MUMBAI",
+      "pensioners": 37938,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "380001",
+      "state": "GUJARAT",
+      "district": null,
+      "city": "AHMEDANBAD",
+      "pensioners": 28253,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "560001",
+      "state": "nan",
+      "district": "BANGALORE",
+      "city": "BANGALORE",
+      "pensioners": 26062,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "695033",
+      "state": "KERALA",
+      "district": "TRIVANDRUM",
+      "city": null,
+      "pensioners": 23670,
+      "banks": 0,
+      "branches": 0
+    },
+    {
+      "pincode": "111111",
+      "state": "WEST BENGAL",
+      "district": "MADAGASCAR                              ",
+      "city": "SILIGURI",
+      "pensioners": 20357,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "520010",
+      "state": "ANDRA PRADESH",
+      "district": null,
+      "city": "VIZAG",
+      "pensioners": 18577,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "110005",
+      "state": "nan",
+      "district": "NEW DELHI",
+      "city": "DELHI",
+      "pensioners": 18428,
+      "banks": 5,
+      "branches": 0
+    },
+    {
+      "pincode": "700020",
+      "state": "WEST BENGAL",
+      "district": "KOLKATA",
+      "city": "HAORA",
+      "pensioners": 16996,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "226010",
+      "state": "UTTARPRADESH",
+      "district": "LUCKNOW",
+      "city": "LUCKOW",
+      "pensioners": 16060,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "462015",
+      "state": null,
+      "district": null,
+      "city": null,
+      "pensioners": 15896,
+      "banks": 0,
+      "branches": 0
+    },
+    {
+      "pincode": "500072",
+      "state": "TELANGANA",
+      "district": "HYDERABAD",
+      "city": "RANGAREDDY",
+      "pensioners": 15431,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "700001",
+      "state": "nan",
+      "district": "KOLKATA",
+      "city": "KOLKATA",
+      "pensioners": 15212,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "302004",
+      "state": "RAJASTHAN",
+      "district": "JAIPUR",
+      "city": "JAIPUR",
+      "pensioners": 14274,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "160019",
+      "state": "CHANDIGARH",
+      "district": "MOHALI",
+      "city": "CHANDIGARH",
+      "pensioners": 11207,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "800001",
+      "state": "LAKHSWADEEP",
+      "district": "PATNA",
+      "city": "KENGAVA, BANGALORE",
+      "pensioners": 10068,
+      "banks": 5,
+      "branches": 0
+    },
+    {
+      "pincode": "250002",
+      "state": "UTTARPRADESH",
+      "district": "MEERUT                                  ",
+      "city": "MEERUT",
+      "pensioners": 9404,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "781001",
+      "state": "ASSAM",
+      "district": "GUWAHATI",
+      "city": "GUWAHATI",
+      "pensioners": 7543,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "751001",
+      "state": "nan",
+      "district": "BHUBANESWAR",
+      "city": "KHURDHA",
+      "pensioners": 6493,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "133001",
+      "state": "PUNJAB",
+      "district": "AMBALA CANTT",
+      "city": "AMBALA",
+      "pensioners": 6082,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "482001",
+      "state": "nan",
+      "district": "CIVIL LINES JABALPUR",
+      "city": "VIDISHA",
+      "pensioners": 5162,
+      "banks": 6,
+      "branches": 0
+    },
+    {
+      "pincode": "400001",
+      "state": "MEGHALAYA",
+      "district": "MUMBAI",
+      "city": "MAUBAI",
+      "pensioners": 4994,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "492001",
+      "state": "nan",
+      "district": "RAIPUR",
+      "city": "REWA",
+      "pensioners": 4678,
+      "banks": 7,
+      "branches": 0
+    },
+    {
+      "pincode": "360001",
+      "state": "GUJARAT",
+      "district": null,
+      "city": "RAJKOT",
+      "pensioners": 4216,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "143001",
+      "state": "nan",
+      "district": "AMRITSAR",
+      "city": "AMRITSAR",
+      "pensioners": 3555,
+      "banks": 4,
+      "branches": 0
+    },
+    {
+      "pincode": "834001",
+      "state": "nan",
+      "district": "RANCHI",
+      "city": "RANCHI",
+      "pensioners": 3534,
+      "banks": 5,
+      "branches": 0
+    },
+    {
+      "pincode": "248001",
+      "state": "UTTARPRADESH",
+      "district": "DEHRADUN",
+      "city": "KATHKUIYAN ROAD KUSHI NAGAR",
+      "pensioners": 3473,
+      "banks": 5,
+      "branches": 0
+    },
+    {
+      "pincode": "171004",
+      "state": "HIMACHAL PRADESH",
+      "district": null,
+      "city": "SHIMLA",
+      "pensioners": 2866,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "180012",
+      "state": "JAMMU AND KASHMIR",
+      "district": "JAMMU",
+      "city": "JAMMU",
+      "pensioners": 2853,
+      "banks": 1,
+      "branches": 0
+    },
+    {
+      "pincode": "221712",
+      "state": "UTTARPRADESH",
+      "district": null,
+      "city": "UTTAR PRADESH",
+      "pensioners": 2718,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "793001",
+      "state": "MEGHALAYA",
+      "district": "SHILLONG",
+      "city": "SHILLONG",
+      "pensioners": 2686,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "380015",
+      "state": "GUJARAT",
+      "district": "AHMEDABAD",
+      "city": "AHMEDABAD",
+      "pensioners": 2587,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "143521",
+      "state": "PUNJAB",
+      "district": "JAURA CHHITTRAN",
+      "city": "PUNAJB",
+      "pensioners": 2557,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "143505",
+      "state": "PUNJAB",
+      "district": "BATALA",
+      "city": "BATALA",
+      "pensioners": 2504,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "400056",
+      "state": "WEST BENGAL",
+      "district": "MUMBAI",
+      "city": "DISTRICT",
+      "pensioners": 2187,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "389151",
+      "state": "GUJARAT",
+      "district": null,
+      "city": "DOHAD",
+      "pensioners": 2143,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "460447",
+      "state": "nan",
+      "district": null,
+      "city": "BETUL",
+      "pensioners": 2109,
+      "banks": 1,
+      "branches": 0
+    },
+    {
+      "pincode": "380005",
+      "state": "GUJARAT",
+      "district": "AHMEDABAD",
+      "city": "AHMEDABAD",
+      "pensioners": 2095,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "389160",
+      "state": "GUJARAT",
+      "district": null,
+      "city": "DAHOD",
+      "pensioners": 2081,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "396001",
+      "state": "GUJARAT",
+      "district": "VALSAD",
+      "city": "VALSAD",
+      "pensioners": 2078,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "364001",
+      "state": "GUJARAT",
+      "district": "BHAVNAGAR",
+      "city": "GUJRAT",
+      "pensioners": 2049,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "560010",
+      "state": "nan",
+      "district": null,
+      "city": "BANGALORE",
+      "pensioners": 2023,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "362001",
+      "state": "GUJARAT",
+      "district": "JUNAGADH",
+      "city": "JUNAGARH",
+      "pensioners": 1824,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "390001",
+      "state": "GUJARAT",
+      "district": "VADODARA",
+      "city": "VADODARA",
+      "pensioners": 1737,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "380009",
+      "state": "GUJARAT",
+      "district": "AHMEDABAD",
+      "city": "AHMEDABAD",
+      "pensioners": 1692,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "380008",
+      "state": "GUJARAT",
+      "district": "AHMEDABAD",
+      "city": "AHMEDABAD",
+      "pensioners": 1655,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "384001",
+      "state": "UTTARAKHAND",
+      "district": null,
+      "city": "MEHESANA",
+      "pensioners": 1646,
+      "banks": 2,
+      "branches": 0
+    },
+    {
+      "pincode": "834002",
+      "state": "nan",
+      "district": "RANCHI",
+      "city": "RANCHI",
+      "pensioners": 1624,
+      "banks": 5,
+      "branches": 0
+    },
+    {
+      "pincode": "390002",
+      "state": "GUJARAT",
+      "district": "VADODARA",
+      "city": "VADODARA GUJARAT",
+      "pensioners": 1593,
+      "banks": 3,
+      "branches": 0
+    },
+    {
+      "pincode": "482002",
+      "state": "nan",
+      "district": "JABALPUR                                ",
+      "city": "VIDDUT NAGAR RAMPUR JABALPUR JABALPUR",
+      "pensioners": 1539,
+      "banks": 7,
+      "branches": 0
+    }
+  ],
+  "bank_distribution": [
+    {
+      "bank": "PUNJAB NATIONAL BANK",
+      "pincodes": 1,
+      "pensioners": 2
+    },
+    {
+      "bank": "YAPRAL",
+      "pincodes": 1,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.UDAIPUR",
+      "pincodes": 4,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.REWA",
+      "pincodes": 6368,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.RANCHI",
+      "pincodes": 88,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.RAIPUR",
+      "pincodes": 36,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.PATNA",
+      "pincodes": 52,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.JAIPUR",
+      "pincodes": 1,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.JABALPUR",
+      "pincodes": 1869,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.INDORE",
+      "pincodes": 7,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.GWALIOR",
+      "pincodes": 7,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.GOA",
+      "pincodes": 8,
+      "pensioners": 0
+    },
+    {
+      "bank": "R.O.BHOPAL",
+      "pincodes": 5,
+      "pensioners": 0
+    },
+    {
+      "bank": "MADAN MAHAL",
+      "pincodes": 825,
+      "pensioners": 0
+    },
+    {
+      "bank": "INDIA EXCHANGE PLACE,KOLKATA",
+      "pincodes": 207,
+      "pensioners": 0
+    },
+    {
+      "bank": "ICICI Bank",
+      "pincodes": 629,
+      "pensioners": 0
+    },
+    {
+      "bank": "FGMO BHOPAL",
+      "pincodes": 918,
+      "pensioners": 0
+    },
+    {
+      "bank": "CENTRAL PENSION PROCESSING CENT                                                                                                     ",
+      "pincodes": 918,
+      "pensioners": 0
+    },
+    {
+      "bank": "CENTRAL PENSION PROCESSING CENT",
+      "pincodes": 5114,
+      "pensioners": 0
+    },
+    {
+      "bank": "CENTRAL PENSION PROCESSING CELL H.O",
+      "pincodes": 1304,
+      "pensioners": 0
+    }
+  ],
+  "age_distribution": {
+    "less_than_80": 2,
+    "more_than_80": 0,
+    "not_available": 0
+  }
+}

@@ -50,6 +50,10 @@ def read_excel_streaming(excel_path, sheet_name=0, chunk_size=1000):
         # Skip completely empty rows
         if all(cell is None or str(cell).strip() == '' for cell in row):
             continue
+<<<<<<< HEAD
+=======
+        
+>>>>>>> e199434 (latest changes pushed before restart)
         chunk.append(row)
         if len(chunk) >= chunk_size:
             yield pd.DataFrame(chunk, columns=header)
@@ -260,16 +264,24 @@ def insert_data_streaming_all_sheets(db_path, table_name, excel_path, column_map
                 # Handle NULLs
                 df_mapped = handle_null_values(df_mapped, null_handling_config)
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e199434 (latest changes pushed before restart)
                 
                 # Skip empty chunks (after all transformations)
                 if df_mapped.empty or len(df_mapped) == 0:
                     continue
+<<<<<<< HEAD
 
                 # Auto-create table if it doesn't exist
 =======
 
                 # Auto-create table if it doesn’t exist
 >>>>>>> ef12304 (Initial commit)
+=======
+
+                # Auto-create table if it doesn't exist
+>>>>>>> e199434 (latest changes pushed before restart)
                 if chunk_count == 0 and chunk_df.shape[0] > 0:
                     create_table_if_not_exists(conn, table_name, df_mapped)
 
@@ -277,16 +289,22 @@ def insert_data_streaming_all_sheets(db_path, table_name, excel_path, column_map
                 rows_in_chunk = len(df_mapped)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e199434 (latest changes pushed before restart)
                 # Use executemany for batch insertion (much faster than row-by-row)
                 rows_data = df_mapped.values.tolist()
                 cursor.executemany(insert_query, rows_data)
                 total_inserted += rows_in_chunk
+<<<<<<< HEAD
 =======
                 for _, row in tqdm(df_mapped.iterrows(), total=rows_in_chunk,
                                    desc=f"Inserting {sheet_name}", unit="rows", leave=False):
                     cursor.execute(insert_query, row.tolist())
                     total_inserted += 1
 >>>>>>> ef12304 (Initial commit)
+=======
+>>>>>>> e199434 (latest changes pushed before restart)
 
                 conn.commit()
                 chunk_count += 1

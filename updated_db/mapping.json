@@ -3,8 +3,8 @@
     "YOB": "Year of Birth",
     "state": "State",
     "Pensioner_pincode": "Postal Address PinCode of pensioner",
-    "Branch_pincode": "Address PinCode of Pension Disbursing Branch",
-    "PSA":"Pension Sanctioning Authority",
-    "PPO":"PPO No."
+    "Branch_pincode": "Address Pincode of Pension disbursing branch",
+    "PSA":"Pension Sanctioning authority",
+    "PPO":"PPO"
   }
 }

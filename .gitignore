@@ -46,11 +46,12 @@ out.json
 
 # Large sample data
 static_data/**/*.xlsx
-<<<<<<< HEAD
  
+# Ignore local Excel data directories
 EXCEL_DATA/
 EXCEL_DATA/EXCEL_DATA/
 
+# Project-specific large artifacts
 pensioner_data_analysis_*.xlsx
 DLCServer/**/*.xlsx
 DLCServer/*.xlsx
@@ -60,11 +61,3 @@ updated_db/*.db
 manual_lcs_data/
 updated_db/*.xlsx
 updated_db/mapping.json
-=======
-
-updated_db/*.db
-updated_db/*.xlsx
-EXCEL_DATA/
-pensioner_data_*.xlsx
-
->>>>>>> e199434 (latest changes pushed before restart)

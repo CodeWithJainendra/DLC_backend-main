@@ -595,7 +595,7 @@ async function getDashboardStats() {
  * Get top 7 states by number of verified pensioners
  * @returns {Array} Array of states with verification counts
  */
-async function getTopStatesByVerifiedPensioners() {
+async function getTopStatesByVerifiedPensioners(limit) {
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
     const closeDb = () => {
@@ -607,313 +607,116 @@ async function getTopStatesByVerifiedPensioners() {
     };
 
     try {
-        // Get state-wise data from doppw_pensioner_data (main verification table)
-        const doppwStates = await new Promise((resolve, reject) => {
-            const query = `
-                SELECT 
-                    pensioner_state as state,
-                    COUNT(*) as total,
-                    SUM(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 ELSE 0 END) as verified,
-                    SUM(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 ELSE 0 END) as pending
-                FROM doppw_pensioner_data
-                WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                GROUP BY pensioner_state
-                ORDER BY total DESC
-            `;
-            db.all(query, [], (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows.map(row => ({
-                        state: row.state,
-                        doppw_total: row.total,
-                        doppw_verified: row.verified,
-                        doppw_pending: row.pending,
-                        doppw_completion_rate: row.total > 0 ? parseFloat(((row.verified / row.total) * 100).toFixed(2)) : 0
-                    })));
-                }
-            });
-        });
+        // Use only all_pensioners for both totals and verified (LC_date)
+        const allStateCol = 'state';
 
-        // Get state-wise data from bank_pensioner_data
-        const bankStates = await new Promise((resolve, reject) => {
-            const query = `
-                SELECT 
-                    bank_state as state,
-                    COUNT(*) as records,
-                    SUM(COALESCE(grand_total, 0)) as total_pensioners
-                FROM bank_pensioner_data
-                WHERE bank_state IS NOT NULL AND bank_state != 'nan' AND bank_state != ''
-                GROUP BY bank_state
-            `;
-            db.all(query, [], (err, rows) => {
-                if (err) {
-                    console.warn('Bank table query failed:', err.message);
-                    resolve([]);
-                } else {
-                    resolve(rows.map(row => ({
-                        state: row.state,
-                        bank_records: row.records,
-                        bank_total_pensioners: row.total_pensioners
-                    })));
-                }
-            });
-        });
-
-        // Get comprehensive PSA data (both state and district level) with district-to-state mapping
-        const psaStates = await new Promise((resolve, reject) => {
-            const query = `
-                SELECT 
-                    location_name,
-                    data_type,
-                    COUNT(*) as records,
-                    SUM(COALESCE(total_pensioners, 0)) as total_pensioners
-                FROM psa_pensioner_data
-                WHERE location_name IS NOT NULL AND location_name != 'nan' AND location_name != ''
-                GROUP BY location_name, data_type
-            `;
-            db.all(query, [], (err, rows) => {
-                if (err) {
-                    console.warn('PSA table query failed:', err.message);
-                    resolve([]);
-                } else {
-                    // Create district to state mapping for major districts
-                    const districtToStateMapping = {
-                        // Delhi districts
-                        'Central Delhi': 'Delhi', 'EastDelhi': 'Delhi', 'East Delhi': 'Delhi',
-                        'North Delhi': 'Delhi', 'North-EastDelhi': 'Delhi', 'North-East Delhi': 'Delhi',
-                        'North-West Delhi': 'Delhi', 'South Delhi': 'Delhi', 'West Delhi': 'Delhi',
-                        'New Delhi': 'Delhi', 'South-West Delhi': 'Delhi', 'South-East Delhi': 'Delhi',
-                        'South-WestDelhi': 'Delhi', 'South-EastDelhi': 'Delhi',
-
-                        // Haryana districts
-                        'Gurugram': 'Haryana', 'Jhajjar': 'Haryana', 'Sonipat': 'Haryana',
-                        'Faridabad': 'Haryana', 'Panipat': 'Haryana', 'Rohtak': 'Haryana',
-                        'Hisar': 'Haryana', 'Karnal': 'Haryana', 'Ambala': 'Haryana',
-                        'Palwal': 'Haryana', 'Rewari': 'Haryana',
-
-                        // UP districts  
-                        'Ghaziabad': 'Uttar Pradesh', 'Lucknow': 'Uttar Pradesh', 'Kanpur': 'Uttar Pradesh',
-                        'Agra': 'Uttar Pradesh', 'Varanasi': 'Uttar Pradesh', 'Meerut': 'Uttar Pradesh',
-                        'Allahabad': 'Uttar Pradesh', 'Bareilly': 'Uttar Pradesh', 'Moradabad': 'Uttar Pradesh',
-                        'Saharanpur': 'Uttar Pradesh', 'Gorakhpur': 'Uttar Pradesh', 'Noida': 'Uttar Pradesh',
-                        'Gautam Buddha Nagar': 'Uttar Pradesh', 'Baghpat': 'Uttar Pradesh',
-
-                        // Maharashtra districts
-                        'Mumbai': 'Maharashtra', 'Pune': 'Maharashtra', 'Nagpur': 'Maharashtra',
-                        'Thane': 'Maharashtra', 'Nashik': 'Maharashtra', 'Aurangabad': 'Maharashtra',
-                        'Mumbai Suburban': 'Maharashtra',
-
-                        // Karnataka districts
-                        'Bangalore': 'Karnataka', 'Bengaluru': 'Karnataka', 'Mysore': 'Karnataka',
-                        'Bengaluru Urban': 'Karnataka', 'Mysuru': 'Karnataka', 'Hubli': 'Karnataka',
-                        'Mangalore': 'Karnataka', 'Belgaum': 'Karnataka', 'Gulbarga': 'Karnataka',
-
-                        // Tamil Nadu districts
-                        'Chennai': 'Tamil Nadu', 'Coimbatore': 'Tamil Nadu', 'Madurai': 'Tamil Nadu',
-
-                        // Other major districts
-                        'Hyderabad': 'Telangana', 'Kolkata': 'West Bengal', 'Ahmedabad': 'Gujarat',
-                        'Jaipur': 'Rajasthan', 'Alwar': 'Rajasthan', 'Bhopal': 'Madhya Pradesh', 'Patna': 'Bihar',
-                        'Bhubaneswar': 'Odisha', 'Chandigarh': 'Chandigarh', 'Dehradun': 'Uttarakhand',
-                        'Raipur': 'Chhattisgarh', 'Ranchi': 'Jharkhand', 'Guwahati': 'Assam'
-                    };
-
-                    // Aggregate PSA data by state
-                    const stateAggregation = new Map();
-
-                    rows.forEach(row => {
-                        let stateName = row.location_name;
-
-                        // If it's a district, map it to state
-                        if (row.data_type === 'district') {
-                            stateName = districtToStateMapping[row.location_name];
-                            // Skip unmapped districts
-                            if (!stateName) return;
-                        }
-
-                        // Skip non-state categories
-                        const skipCategories = [
-                            'Concerned State Government', 'Central Government',
-                            'State Government', 'Others', 'Total'
-                        ];
-
-                        if (!skipCategories.includes(stateName)) {
-                            const normalizedStateName = stateName.toUpperCase();
-                            if (stateAggregation.has(normalizedStateName)) {
-                                const existing = stateAggregation.get(normalizedStateName);
-                                existing.psa_records += row.records;
-                                existing.psa_total_pensioners += row.total_pensioners;
-                            } else {
-                                stateAggregation.set(normalizedStateName, {
-                                    state: stateName,
-                                    psa_records: row.records,
-                                    psa_total_pensioners: row.total_pensioners
-                                });
-                            }
-                        }
-                    });
-
-                    resolve(Array.from(stateAggregation.values()));
-                }
-            });
-        });
-
-        // Combine all state data with case-insensitive matching
-        const allStatesMap = new Map();
-
-        // Add doppw data (main table with verification status)
-        doppwStates.forEach(state => {
-            const normalizedKey = state.state.toUpperCase();
-            allStatesMap.set(normalizedKey, {
-                ...state,
-                displayName: state.state // Keep original case for display
-            });
-        });
-
-        // Add bank data with case-insensitive matching
-        bankStates.forEach(state => {
-            const normalizedKey = state.state.toUpperCase();
-            if (allStatesMap.has(normalizedKey)) {
-                const existing = allStatesMap.get(normalizedKey);
-                existing.bank_records = state.bank_records;
-                existing.bank_total_pensioners = state.bank_total_pensioners;
-            } else {
-                allStatesMap.set(normalizedKey, {
-                    state: state.state,
-                    displayName: state.state,
-                    bank_records: state.bank_records,
-                    bank_total_pensioners: state.bank_total_pensioners,
-                    doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                });
-            }
-        });
-
-        // Add psa data with case-insensitive matching
-        psaStates.forEach(state => {
-            const normalizedKey = state.state.toUpperCase();
-            if (allStatesMap.has(normalizedKey)) {
-                const existing = allStatesMap.get(normalizedKey);
-                existing.psa_records = (existing.psa_records || 0) + state.psa_records;
-                existing.psa_total_pensioners = (existing.psa_total_pensioners || 0) + state.psa_total_pensioners;
-            } else {
-                allStatesMap.set(normalizedKey, {
-                    state: state.state,
-                    displayName: state.state,
-                    psa_records: state.psa_records,
-                    psa_total_pensioners: state.psa_total_pensioners,
-                    doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                });
-            }
-        });
-
-        // Get state-wise data from ubi3_pensioner_data
-        const ubi3States = await new Promise((resolve, reject) => {
-            const query = `
-                SELECT 
-                    pensioner_state as state,
-                    COUNT(*) as total
-                FROM ubi3_pensioner_data
-                WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                GROUP BY pensioner_state
-            `;
-            db.all(query, [], (err, rows) => {
-                if (err) {
-                    console.warn('UBI3 table query failed:', err.message);
-                    resolve([]);
-                } else {
-                    resolve(rows.map(row => ({
-                        state: row.state,
-                        ubi3_total: row.total
-                    })));
-                }
-            });
-        });
-
-        // Get state-wise data from ubi1_pensioner_data
-        const ubi1States = await new Promise((resolve, reject) => {
-            const query = `
-                SELECT 
-                    pensioner_state as state,
-                    COUNT(*) as total
-                FROM ubi1_pensioner_data
-                WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                GROUP BY pensioner_state
-            `;
-            db.all(query, [], (err, rows) => {
-                if (err) {
-                    console.warn('UBI1 table query failed:', err.message);
-                    resolve([]);
-                } else {
-                    resolve(rows.map(row => ({
-                        state: row.state,
-                        ubi1_total: row.total
-                    })));
-                }
-            });
-        });
-
-        // Add ubi3 data with case-insensitive matching
-        ubi3States.forEach(state => {
-            const normalizedKey = state.state.toUpperCase();
-            if (allStatesMap.has(normalizedKey)) {
-                const existing = allStatesMap.get(normalizedKey);
-                existing.ubi3_total = state.ubi3_total;
-            } else {
-                allStatesMap.set(normalizedKey, {
-                    state: state.state,
-                    displayName: state.state,
-                    ubi3_total: state.ubi3_total,
-                    doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                });
-            }
-        });
-
-        // Add ubi1 data with case-insensitive matching
-        ubi1States.forEach(state => {
-            const normalizedKey = state.state.toUpperCase();
-            if (allStatesMap.has(normalizedKey)) {
-                const existing = allStatesMap.get(normalizedKey);
-                existing.ubi1_total = state.ubi1_total;
-            } else {
-                allStatesMap.set(normalizedKey, {
-                    state: state.state,
-                    displayName: state.state,
-                    ubi1_total: state.ubi1_total,
-                    doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                });
-            }
-        });
-
-        // Convert map to array and calculate combined totals
-        const combinedStates = Array.from(allStatesMap.values()).map(state => {
-            const combinedTotal = (state.doppw_total || 0) +
-                (state.bank_total_pensioners || 0) +
-                (state.psa_total_pensioners || 0) +
-                (state.ubi3_total || 0) +
-                (state.ubi1_total || 0);
-
-            const verificationRate = state.doppw_total > 0 ?
-                ((state.doppw_verified / state.doppw_total) * 100).toFixed(2) : 0;
-
-            return {
-                state: state.displayName, // Use original case for display
-                total_pensioners: combinedTotal,
-                verified_count: state.doppw_verified || 0,
-                verification_rate: parseFloat(verificationRate),
-                doppw_total: state.doppw_total || 0,
-                bank_total_pensioners: state.bank_total_pensioners || 0,
-                psa_total_pensioners: state.psa_total_pensioners || 0,
-                ubi3_total: state.ubi3_total || 0,
-                ubi1_total: state.ubi1_total || 0,
-                data_sources: ['doppw_pensioner_data', 'bank_pensioner_data', 'psa_pensioner_data', 'ubi3_pensioner_data', 'ubi1_pensioner_data']
+        // Normalize and alias states: remove non-letters, merge common variants
+        const normalizeState = (s) => {
+            if (!s) return '';
+            const raw = String(s).trim().toUpperCase();
+            if (raw === '' || raw === 'NAN' || raw === 'UNKNOWN' || raw === 'NULL') return '';
+            const compact = raw.replace(/[^A-Z]/g, '');
+            const aliases = {
+                'NCTOFDELHI': 'DELHI',
+                'NEWDELHI': 'DELHI',
+                'UTTARPRADESH': 'UTTAR PRADESH',
+                'MADHYAPRADESH': 'MADHYA PRADESH',
+                'ANDHRAPRADESH': 'ANDHRA PRADESH',
+                'ANDRAPRADESH': 'ANDHRA PRADESH',
+                'TAMILNADU': 'TAMIL NADU',
+                'WESTBENGAL': 'WEST BENGAL',
+                'DAMANDIU': 'DAMAN AND DIU',
+                'DADRAANDNAGARHAVELIANDDAMANANDDIU': 'DADRA AND NAGAR HAVELI AND DAMAN AND DIU',
+                'UTTARANCHAL': 'UTTARAKHAND',
+                'LAKHSWADEEP': 'LAKSHADWEEP',
+                'CHATTISGARH': 'CHHATTISGARH',
+                'JHARAKHAND': 'JHARKHAND'
             };
+            return aliases[compact] || raw;
+        };
+
+        // Totals per state
+        const allTotals = await new Promise((resolve) => {
+            const query = `
+                SELECT 
+                    ${allStateCol} AS state,
+                    COUNT(*) AS total_pensioners
+                FROM all_pensioners
+                WHERE ${allStateCol} IS NOT NULL 
+                  AND ${allStateCol} != ''
+                  AND UPPER(${allStateCol}) != 'NAN'
+                GROUP BY ${allStateCol}
+            `;
+            db.all(query, [], (err, rows) => {
+                if (err) {
+                    console.warn('all_pensioners aggregation failed:', err.message);
+                    resolve([]);
+                } else {
+                    resolve(rows || []);
+                }
+            });
         });
 
-        // Sort by total pensioners and get top 10 states
-        combinedStates.sort((a, b) => b.total_pensioners - a.total_pensioners);
+        // Verified proxy via LC_date
+        const lcVerified = await new Promise((resolve) => {
+            const query = `
+                SELECT 
+                    ${allStateCol} AS state,
+                    COUNT(*) AS verified_count
+                FROM all_pensioners
+                WHERE ${allStateCol} IS NOT NULL 
+                  AND ${allStateCol} != ''
+                  AND UPPER(${allStateCol}) != 'NAN'
+                  AND LC_date IS NOT NULL 
+                  AND TRIM(LC_date) != ''
+                  AND UPPER(LC_date) != 'NAN'
+                GROUP BY ${allStateCol}
+            `;
+            db.all(query, [], (err, rows) => {
+                if (err) {
+                    console.warn('all_pensioners LC_date aggregation failed:', err.message);
+                    resolve([]);
+                } else {
+                    resolve(rows || []);
+                }
+            });
+        });
 
-        return combinedStates.slice(0, 10);
+        // Build maps
+        const totalsMap = new Map();
+        allTotals.forEach(r => {
+            const key = normalizeState(r.state);
+            if (!key) return; // skip invalid
+            const prev = totalsMap.get(key) || 0;
+            totalsMap.set(key, prev + (r.total_pensioners || 0));
+        });
+        const verifiedMap = new Map();
+        lcVerified.forEach(r => {
+            const key = normalizeState(r.state);
+            if (!key) return; // skip invalid
+            const prev = verifiedMap.get(key) || 0;
+            verifiedMap.set(key, prev + (r.verified_count || 0));
+        });
+
+        // Merge
+        const merged = [];
+        totalsMap.forEach((total, state) => {
+            const verified = verifiedMap.get(state) || 0;
+            merged.push({
+                state,
+                total_pensioners: total,
+                verified_count: verified,
+                verification_rate: total > 0 ? Number(((verified * 100.0) / total).toFixed(2)) : 0,
+                data_sources: ['all_pensioners']
+            });
+        });
+
+        // Sort by total pensioners desc
+        merged.sort((a, b) => b.total_pensioners - a.total_pensioners);
+
+        // Apply optional limit; return all if not provided or invalid
+        const n = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Number(limit) : merged.length;
+        return merged.slice(0, n);
     } finally {
         closeDb();
     }
@@ -1170,18 +973,13 @@ app.options('/api/dashboard/stats', (req, res) => {
 // Endpoint to get top states by total pensioners (comprehensive data from all tables)
 app.get('/api/dashboard/top-states', async (req, res) => {
     try {
-        const topStates = await getTopStatesByVerifiedPensioners();
+        const { limit } = req.query;
+        const topStates = await getTopStatesByVerifiedPensioners(limit);
         res.status(200).json({
             success: true,
             topStates: topStates,
             totalStates: topStates.length,
-            dataSources: [
-                'doppw_pensioner_data (main verification table)',
-                'bank_pensioner_data (bank-wise aggregated data)',
-                'psa_pensioner_data (PSA location-wise data)',
-                'ubi3_pensioner_data (UBI3 individual records)',
-                'ubi1_pensioner_data (UBI1 individual records)'
-            ]
+            dataSources: ['all_pensioners']
         });
     } catch (error) {
         console.error('Error in /api/dashboard/top-states:', error);
@@ -1195,18 +993,13 @@ app.get('/api/dashboard/top-states', async (req, res) => {
 // Public endpoint for top states (no authentication required)
 app.get('/api/dashboard/public-top-states', async (req, res) => {
     try {
-        const topStates = await getTopStatesByVerifiedPensioners();
+        const { limit } = req.query;
+        const topStates = await getTopStatesByVerifiedPensioners(limit);
         res.status(200).json({
             success: true,
             topStates: topStates,
             totalStates: topStates.length,
-            dataSources: [
-                'doppw_pensioner_data (main verification table)',
-                'bank_pensioner_data (bank-wise aggregated data)',
-                'psa_pensioner_data (PSA location-wise data)',
-                'ubi3_pensioner_data (UBI3 individual records)',
-                'ubi1_pensioner_data (UBI1 individual records)'
-            ]
+            dataSources: ['all_pensioners']
         });
     } catch (error) {
         console.error('Error in /api/dashboard/public-top-states:', error);

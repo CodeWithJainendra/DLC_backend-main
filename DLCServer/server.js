@@ -9,7 +9,6 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const multer = require('multer');
 const { getStateGeographicAnalysis, getAllAvailableStates } = require('./geographic-analysis-api');
-const excelAnalyzerRouter = require('./excel-analyzer-api');
 const geographicRoutes = require('./routes/geographic-routes');
 
 const app = express();
@@ -54,12 +53,18 @@ app.use((req, res, next) => {
 // Mount the geographic routes
 app.use('/dlc-pension-data-api/geography', geographicRoutes);
 
-// Middleware to handle double slash issues
+// Middleware to handle double slash issues and proxy path normalization
 app.use((req, res, next) => {
     // Normalize double slashes in the URL path
     if (req.url.includes('//')) {
         req.url = req.url.replace(/\/+/g, '/');
     }
+
+    // Strip reverse proxy base path if present
+    // e.g., /dlc-pension-data-api/api/psa-pensioner-types -> /api/psa-pensioner-types
+    req.url = req.url.replace(/^\/dlc-pension-data-api(\/|$)/, '/');
+    req.originalUrl = (req.originalUrl || '').replace(/^\/dlc-pension-data-api(\/|$)/, '/');
+
     next();
 });
 
@@ -605,13 +610,13 @@ async function getTopStatesByVerifiedPensioners(limit) {
 
     try {
         // Use only all_pensioners for both totals and verified (LC_date)
-        
-            const query = `select State, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
-(count(LC_date)/count(*))*100 as completion_ratio
+
+        const query = `select State, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
+(count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
 from all_pensioners where state is Not null and State != 'null' GROUP by state order by completion_ratio desc limit 5`;
 
-            console.log(query)
-             const rows = await new Promise((resolve, reject) => {
+        console.log(query)
+        const rows = await new Promise((resolve, reject) => {
             db.all(query, [], (err, rows) => {
                 if (err) {
                     reject(err);
@@ -625,7 +630,7 @@ from all_pensioners where state is Not null and State != 'null' GROUP by state o
         console.log(rows.length)
 
         rows.forEach(r => {
-     console.log(r)
+            console.log(r)
             merged.push({
                 state: r.state,
                 total_pensioners: r.all_pensioner_count,
@@ -634,14 +639,14 @@ from all_pensioners where state is Not null and State != 'null' GROUP by state o
 
             });
         });
-     
+
         return merged;
     }
     catch (err) {
         console.warn('Top states by verified pensioners query failed:', err.message);
         return [];
     }
-     finally {
+    finally {
         closeDb();
     }
 }
@@ -2116,295 +2121,6 @@ app.get('/api/dashboard/filtered-stats', async (req, res) => {
     }
 });
 
-// New endpoint to get all available filter options
-app.get('/api/pensioners/filter-options', async (req, res) => {
-    try {
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
-        const closeDb = () => {
-            db.close(err => {
-                if (err) {
-                    console.warn('Warning: failed to close database connection', err.message);
-                }
-            });
-        };
-
-        try {
-            // Get all unique states
-            const states = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT DISTINCT pensioner_state as state
-                    FROM doppw_pensioner_data
-                    WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan'
-                    ORDER BY pensioner_state
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows.map(row => row.state));
-                    }
-                });
-            });
-
-            // Get all unique banks/branches
-            const banks = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT DISTINCT branch_name as bank
-                    FROM doppw_pensioner_data
-                    WHERE branch_name IS NOT NULL AND branch_name != 'nan'
-                    ORDER BY branch_name
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        // Extract unique bank names from branch names
-                        const bankSet = new Set();
-                        rows.forEach(row => {
-                            const bankName = row.bank.split('(')[0].trim();
-                            if (bankName) {
-                                bankSet.add(bankName);
-                            }
-                        });
-
-                        // Add specific banks mentioned in the request
-                        const specificBanks = [
-                            'UNION BANK OF INDIA',
-                            'STATE BANK OF INDIA',
-                            'BANK OF BARODA',
-                            'PUNJAB NATIONAL BANK',
-                            'CANARA BANK'
-                        ];
-
-                        // Combine and sort
-                        const allBanks = [...new Set([...Array.from(bankSet), ...specificBanks])].sort();
-                        resolve(allBanks);
-                    }
-                });
-            });
-
-            // Get all age groups (we'll define these statically as per the UI)
-            const ageGroups = [
-                '<60',
-                '60-70',
-                '70-80',
-                '80-90',
-                '>90'
-            ];
-
-            // Get all PSA categories
-            const psaCategories = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT DISTINCT escroll_cat as category
-                    FROM doppw_pensioner_data
-                    WHERE escroll_cat IS NOT NULL AND escroll_cat != 'nan'
-                    ORDER BY escroll_cat
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        // Map to user-friendly names
-                        const categoryMap = {
-                            'RAILWAY': 'Railway',
-                            'STATE': 'Civil',
-                            'DEFENCE': 'Defence'
-                        };
-
-                        const categories = rows.map(row => {
-                            return categoryMap[row.category] || row.category;
-                        });
-
-                        // Ensure all required categories are included
-                        const requiredCategories = ['Railway', 'Civil', 'Defence'];
-                        const allCategories = [...new Set([...categories, ...requiredCategories])].sort();
-                        resolve(allCategories);
-                    }
-                });
-            });
-
-            res.status(200).json({
-                states: states,
-                banks: banks,
-                ageGroups: ageGroups,
-                psaCategories: psaCategories
-            });
-        } finally {
-            closeDb();
-        }
-    } catch (error) {
-        console.error('Error in /api/pensioners/filter-options:', error);
-        res.status(500).json({
-            error: 'Failed to fetch filter options'
-        });
-    }
-});
-
-// Enhanced comprehensive filter options endpoint - gets data from ALL tables
-app.get('/api/pensioners/comprehensive-filter-options', async (req, res) => {
-    try {
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
-        const closeDb = () => {
-            db.close(err => {
-                if (err) {
-                    console.warn('Warning: failed to close database connection', err.message);
-                }
-            });
-        };
-
-        try {
-            // Get all unique states from ALL tables
-            const allStates = await new Promise((resolve, reject) => {
-                const queries = [
-                    "SELECT DISTINCT pensioner_state as state FROM doppw_pensioner_data WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''",
-                    "SELECT DISTINCT bank_state as state FROM bank_pensioner_data WHERE bank_state IS NOT NULL AND bank_state != 'nan' AND bank_state != ''",
-                    "SELECT DISTINCT pensioner_state as state FROM ubi1_pensioner_data WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''",
-                    "SELECT DISTINCT pensioner_state as state FROM ubi3_pensioner_data WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''",
-                    "SELECT DISTINCT location_name as state FROM psa_pensioner_data WHERE location_name IS NOT NULL AND location_name != 'nan' AND location_name != ''"
-                ];
-
-                Promise.all(queries.map(query =>
-                    new Promise((resolveQuery) => {
-                        db.all(query, [], (err, rows) => {
-                            if (err) {
-                                console.warn(`Query failed: ${query}`, err.message);
-                                resolveQuery([]);
-                            } else {
-                                resolveQuery(rows.map(row => row.state));
-                            }
-                        });
-                    })
-                )).then(results => {
-                    const stateSet = new Set();
-                    results.flat().forEach(state => {
-                        if (state && state.trim()) {
-                            stateSet.add(state.trim().toUpperCase());
-                        }
-                    });
-                    resolve(Array.from(stateSet).sort());
-                }).catch(reject);
-            });
-
-            // Get all unique banks from ALL tables
-            const allBanks = await new Promise((resolve, reject) => {
-                const queries = [
-                    "SELECT DISTINCT branch_name as bank FROM doppw_pensioner_data WHERE branch_name IS NOT NULL AND branch_name != 'nan' AND branch_name != ''",
-                    "SELECT DISTINCT bank_name as bank FROM bank_pensioner_data WHERE bank_name IS NOT NULL AND bank_name != 'nan' AND bank_name != ''",
-                    "SELECT DISTINCT bank_name as bank FROM ubi1_pensioner_data WHERE bank_name IS NOT NULL AND bank_name != 'nan' AND bank_name != ''",
-                    "SELECT DISTINCT bank_name as bank FROM ubi3_pensioner_data WHERE bank_name IS NOT NULL AND bank_name != 'nan' AND bank_name != ''"
-                ];
-
-                Promise.all(queries.map(query =>
-                    new Promise((resolveQuery) => {
-                        db.all(query, [], (err, rows) => {
-                            if (err) {
-                                console.warn(`Query failed: ${query}`, err.message);
-                                resolveQuery([]);
-                            } else {
-                                resolveQuery(rows.map(row => row.bank));
-                            }
-                        });
-                    })
-                )).then(results => {
-                    const bankSet = new Set();
-                    results.flat().forEach(bank => {
-                        if (bank && bank.trim()) {
-                            // Extract bank name (remove branch details in parentheses)
-                            const cleanBankName = bank.split('(')[0].trim().toUpperCase();
-                            if (cleanBankName) {
-                                bankSet.add(cleanBankName);
-                            }
-                        }
-                    });
-                    resolve(Array.from(bankSet).sort());
-                }).catch(reject);
-            });
-
-            // Age groups (standardized)
-            const ageGroups = ['<60', '60-70', '70-80', '80-90', '>90'];
-
-            // Get all PSA categories from ALL tables
-            const allPsaCategories = await new Promise((resolve, reject) => {
-                const queries = [
-                    "SELECT DISTINCT escroll_cat as category FROM doppw_pensioner_data WHERE escroll_cat IS NOT NULL AND escroll_cat != 'nan' AND escroll_cat != ''",
-                    "SELECT DISTINCT lc_category as category FROM dot_pensioner_data WHERE lc_category IS NOT NULL AND lc_category != 'nan' AND lc_category != ''"
-                ];
-
-                Promise.all(queries.map(query =>
-                    new Promise((resolveQuery) => {
-                        db.all(query, [], (err, rows) => {
-                            if (err) {
-                                console.warn(`Query failed: ${query}`, err.message);
-                                resolveQuery([]);
-                            } else {
-                                resolveQuery(rows.map(row => row.category));
-                            }
-                        });
-                    })
-                )).then(results => {
-                    const categorySet = new Set();
-
-                    // Category mapping
-                    const categoryMap = {
-                        'RAILWAY': 'Railway',
-                        'STATE': 'Civil',
-                        'DEFENCE': 'Defence',
-                        'CPAO': 'CPAO',
-                        'POSTAL': 'POSTAL',
-                        'TELECOM': 'TELECOM',
-                        'AUTONOMOUS': 'AUTONOMOUS'
-                    };
-
-                    results.flat().forEach(category => {
-                        if (category && category.trim()) {
-                            const mappedCategory = categoryMap[category.toUpperCase()] || category;
-                            categorySet.add(mappedCategory);
-                        }
-                    });
-
-                    // Add standard categories
-                    ['Railway', 'Civil', 'Defence', 'CPAO', 'POSTAL', 'TELECOM', 'AUTONOMOUS'].forEach(cat => {
-                        categorySet.add(cat);
-                    });
-
-                    resolve(Array.from(categorySet).sort());
-                }).catch(reject);
-            });
-
-            res.status(200).json({
-                success: true,
-                states: allStates,
-                banks: allBanks,
-                ageGroups: ageGroups,
-                psaCategories: allPsaCategories,
-                totalCounts: {
-                    states: allStates.length,
-                    banks: allBanks.length,
-                    ageGroups: ageGroups.length,
-                    psaCategories: allPsaCategories.length
-                },
-                dataSources: [
-                    'doppw_pensioner_data',
-                    'bank_pensioner_data',
-                    'ubi1_pensioner_data',
-                    'ubi3_pensioner_data',
-                    'psa_pensioner_data',
-                    'dot_pensioner_data'
-                ]
-            });
-        } finally {
-            closeDb();
-        }
-    } catch (error) {
-        console.error('Error in /api/pensioners/comprehensive-filter-options:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch comprehensive filter options'
-        });
-    }
-});
 
 // Enhanced comprehensive filtering endpoint - works across ALL tables with detailed breakdown
 app.get('/api/pensioners/comprehensive-filtered-stats', async (req, res) => {
@@ -3888,316 +3604,7 @@ app.get('/geography/states-old-disabled', async (req, res) => {
     }
 });
 
-// New comprehensive endpoint to get ALL states data from ALL database tables
-app.get('/api/pensioners/all-states-comprehensive', async (req, res) => {
-    try {
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
-        const closeDb = () => {
-            db.close(err => {
-                if (err) {
-                    console.warn('Warning: failed to close database connection', err.message);
-                }
-            });
-        };
-
-        try {
-            // Get state-wise data from doppw_pensioner_data (main verification table)
-            const doppwStates = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT 
-                        pensioner_state as state,
-                        COUNT(*) as total,
-                        SUM(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 ELSE 0 END) as verified,
-                        SUM(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 ELSE 0 END) as pending
-                    FROM doppw_pensioner_data
-                    WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                    GROUP BY pensioner_state
-                    ORDER BY total DESC
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows.map(row => ({
-                            state: row.state,
-                            doppw_total: row.total,
-                            doppw_verified: row.verified,
-                            doppw_pending: row.pending,
-                            doppw_completion_rate: row.total > 0 ? parseFloat(((row.verified / row.total) * 100).toFixed(2)) : 0
-                        })));
-                    }
-                });
-            });
-
-            // Get state-wise data from dot_pensioner_data
-            const dotStates = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT 
-                        pensioner_state as state,
-                        COUNT(*) as total
-                    FROM dot_pensioner_data
-                    WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                    GROUP BY pensioner_state
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        console.warn('DOT table query failed:', err.message);
-                        resolve([]);
-                    } else {
-                        resolve(rows.map(row => ({
-                            state: row.state,
-                            dot_total: row.total
-                        })));
-                    }
-                });
-            });
-
-            // Get state-wise data from bank_pensioner_data
-            const bankStates = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT 
-                        state,
-                        COUNT(*) as records,
-                        SUM(COALESCE(grand_total, 0)) as total_pensioners
-                    FROM bank_pensioner_data
-                    WHERE state IS NOT NULL AND state != 'nan' AND state != ''
-                    GROUP BY state
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        console.warn('Bank table query failed:', err.message);
-                        resolve([]);
-                    } else {
-                        resolve(rows.map(row => ({
-                            state: row.state,
-                            bank_records: row.records,
-                            bank_total_pensioners: row.total_pensioners
-                        })));
-                    }
-                });
-            });
-
-            // Get state-wise data from psa_pensioner_data
-            const psaStates = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT 
-                        location_name as state,
-                        COUNT(*) as records,
-                        SUM(COALESCE(total_pensioners, 0)) as total_pensioners
-                    FROM psa_pensioner_data
-                    WHERE location_name IS NOT NULL AND location_name != 'nan' AND location_name != ''
-                    GROUP BY location_name
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        console.warn('PSA table query failed:', err.message);
-                        resolve([]);
-                    } else {
-                        resolve(rows.map(row => ({
-                            state: row.state,
-                            psa_records: row.records,
-                            psa_total_pensioners: row.total_pensioners
-                        })));
-                    }
-                });
-            });
-
-            // Get state-wise data from ubi3_pensioner_data
-            const ubi3States = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT 
-                        pensioner_state as state,
-                        COUNT(*) as total
-                    FROM ubi3_pensioner_data
-                    WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                    GROUP BY pensioner_state
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        console.warn('UBI3 table query failed:', err.message);
-                        resolve([]);
-                    } else {
-                        resolve(rows.map(row => ({
-                            state: row.state,
-                            ubi3_total: row.total
-                        })));
-                    }
-                });
-            });
-
-            // Get state-wise data from ubi1_pensioner_data
-            const ubi1States = await new Promise((resolve, reject) => {
-                const query = `
-                    SELECT 
-                        pensioner_state as state,
-                        COUNT(*) as total
-                    FROM ubi1_pensioner_data
-                    WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                    GROUP BY pensioner_state
-                `;
-                db.all(query, [], (err, rows) => {
-                    if (err) {
-                        console.warn('UBI1 table query failed:', err.message);
-                        resolve([]);
-                    } else {
-                        resolve(rows.map(row => ({
-                            state: row.state,
-                            ubi1_total: row.total
-                        })));
-                    }
-                });
-            });
-
-            // Combine all state data
-            const allStatesMap = new Map();
-
-            // Add doppw data (main table with verification status)
-            doppwStates.forEach(state => {
-                allStatesMap.set(state.state, { ...state });
-            });
-
-            // Add dot data
-            dotStates.forEach(state => {
-                if (allStatesMap.has(state.state)) {
-                    allStatesMap.get(state.state).dot_total = state.dot_total;
-                } else {
-                    allStatesMap.set(state.state, {
-                        state: state.state,
-                        dot_total: state.dot_total,
-                        doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                    });
-                }
-            });
-
-            // Add bank data
-            bankStates.forEach(state => {
-                if (allStatesMap.has(state.state)) {
-                    Object.assign(allStatesMap.get(state.state), {
-                        bank_records: state.bank_records,
-                        bank_total_pensioners: state.bank_total_pensioners
-                    });
-                } else {
-                    allStatesMap.set(state.state, {
-                        state: state.state,
-                        bank_records: state.bank_records,
-                        bank_total_pensioners: state.bank_total_pensioners,
-                        doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                    });
-                }
-            });
-
-            // Add psa data
-            psaStates.forEach(state => {
-                if (allStatesMap.has(state.state)) {
-                    Object.assign(allStatesMap.get(state.state), {
-                        psa_records: state.psa_records,
-                        psa_total_pensioners: state.psa_total_pensioners
-                    });
-                } else {
-                    allStatesMap.set(state.state, {
-                        state: state.state,
-                        psa_records: state.psa_records,
-                        psa_total_pensioners: state.psa_total_pensioners,
-                        doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                    });
-                }
-            });
-
-            // Add ubi3 data
-            ubi3States.forEach(state => {
-                if (allStatesMap.has(state.state)) {
-                    allStatesMap.get(state.state).ubi3_total = state.ubi3_total;
-                } else {
-                    allStatesMap.set(state.state, {
-                        state: state.state,
-                        ubi3_total: state.ubi3_total,
-                        doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                    });
-                }
-            });
-
-            // Add ubi1 data
-            ubi1States.forEach(state => {
-                if (allStatesMap.has(state.state)) {
-                    allStatesMap.get(state.state).ubi1_total = state.ubi1_total;
-                } else {
-                    allStatesMap.set(state.state, {
-                        state: state.state,
-                        ubi1_total: state.ubi1_total,
-                        doppw_total: 0, doppw_verified: 0, doppw_pending: 0, doppw_completion_rate: 0
-                    });
-                }
-            });
-
-            // Convert map to array and calculate combined totals
-            const combinedStates = Array.from(allStatesMap.values()).map(state => {
-                const combinedTotal = (state.doppw_total || 0) +
-                    (state.dot_total || 0) +
-                    (state.bank_total_pensioners || 0) +
-                    (state.psa_total_pensioners || 0) +
-                    (state.ubi3_total || 0) +
-                    (state.ubi1_total || 0);
-
-                return {
-                    ...state,
-                    // Set defaults for missing values
-                    doppw_total: state.doppw_total || 0,
-                    doppw_verified: state.doppw_verified || 0,
-                    doppw_pending: state.doppw_pending || 0,
-                    doppw_completion_rate: state.doppw_completion_rate || 0,
-                    dot_total: state.dot_total || 0,
-                    bank_records: state.bank_records || 0,
-                    bank_total_pensioners: state.bank_total_pensioners || 0,
-                    psa_records: state.psa_records || 0,
-                    psa_total_pensioners: state.psa_total_pensioners || 0,
-                    ubi3_total: state.ubi3_total || 0,
-                    ubi1_total: state.ubi1_total || 0,
-                    combined_total_pensioners: combinedTotal
-                };
-            });
-
-            // Sort by combined total (descending)
-            combinedStates.sort((a, b) => b.combined_total_pensioners - a.combined_total_pensioners);
-
-            // Calculate summary statistics
-            const summary = {
-                total_states: combinedStates.length,
-                total_pensioners_all_tables: combinedStates.reduce((sum, state) => sum + state.combined_total_pensioners, 0),
-                total_verified_doppw: combinedStates.reduce((sum, state) => sum + state.doppw_verified, 0),
-                total_pending_doppw: combinedStates.reduce((sum, state) => sum + state.doppw_pending, 0),
-                overall_completion_rate: 0
-            };
-
-            const totalDoppw = combinedStates.reduce((sum, state) => sum + state.doppw_total, 0);
-            if (totalDoppw > 0) {
-                summary.overall_completion_rate = parseFloat(((summary.total_verified_doppw / totalDoppw) * 100).toFixed(2));
-            }
-
-            res.status(200).json({
-                success: true,
-                summary: summary,
-                states: combinedStates,
-                table_info: {
-                    doppw_pensioner_data: "Main verification table with pending/completed status",
-                    dot_pensioner_data: "DOT pensioner records",
-                    bank_pensioner_data: "Bank-wise pensioner data",
-                    psa_pensioner_data: "PSA location-wise data",
-                    ubi3_pensioner_data: "UBI3 pensioner records",
-                    ubi1_pensioner_data: "UBI1 pensioner records"
-                }
-            });
-        } finally {
-            closeDb();
-        }
-    } catch (error) {
-        console.error('Error in /api/pensioners/all-states-comprehensive:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch comprehensive state data from all tables'
-        });
-    }
-});
 
 // New comprehensive endpoint to get state details from all database tables
 app.get('/api/pensioners/comprehensive-state-details/:stateName', async (req, res) => {
@@ -5734,7 +5141,7 @@ app.get('/api/top-banks', async (req, res) => {
     const { limit = 10 } = req.query;
 
     const top_banks_query = `select Bank_name, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
-(count(LC_date)/count(*))*100 as completion_ratio
+(count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
 from all_pensioners where bank_name is not null GROUP by bank_name order by completion_ratio desc limit 5`;
 
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
@@ -5746,7 +5153,7 @@ from all_pensioners where bank_name is not null GROUP by bank_name order by comp
             }
         });
     };
-console.log(top_banks_query)
+    console.log(top_banks_query)
     try {
         const rows = await new Promise((resolve, reject) => {
             db.all(top_banks_query, (err, rows) => {
@@ -6467,98 +5874,8 @@ app.get('/api/choropleth/state-verification-data', async (req, res) => {
     }
 });
 
-// Test Filtering API - Simple endpoint to test filtering functionality
-app.get('/api/test-filtering', async (req, res) => {
-    const { age_category, bank_name, pension_type } = req.query;
 
-    res.json({
-        success: true,
-        message: "Test filtering endpoint working",
-        filters_received: {
-            age_category: age_category || 'not provided',
-            bank_name: bank_name || 'not provided',
-            pension_type: pension_type || 'not provided'
-        },
-        timestamp: new Date().toISOString()
-    });
-});
 
-// Simplified Choropleth Data API - Just state names and values for quick map rendering
-app.get('/api/choropleth/simple-map-data', async (req, res) => {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
-    const closeDb = () => {
-        db.close(err => {
-            if (err) {
-                console.warn('Warning: failed to close database connection', err.message);
-            }
-        });
-    };
-
-    try {
-        // Simplified query for fast map rendering
-        const query = `
-            WITH state_totals AS (
-                SELECT 
-                    UPPER(TRIM(pensioner_state)) as state,
-                    COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) as verified
-                FROM doppw_pensioner_data
-                WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                GROUP BY UPPER(TRIM(pensioner_state))
-                
-                UNION ALL
-                
-                SELECT 
-                    UPPER(TRIM(bank_state)) as state,
-                    SUM(COALESCE(grand_total, 0)) as verified
-                FROM bank_pensioner_data
-                WHERE bank_state IS NOT NULL AND bank_state != 'nan' AND bank_state != ''
-                GROUP BY UPPER(TRIM(bank_state))
-            )
-            SELECT 
-                state,
-                SUM(verified) as total_verified_pensioners
-            FROM state_totals
-            GROUP BY state
-            ORDER BY total_verified_pensioners DESC
-        `;
-
-        const rows = await new Promise((resolve, reject) => {
-            db.all(query, [], (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows || []);
-                }
-            });
-        });
-
-        // Format for simple map visualization
-        const mapData = {};
-        rows.forEach(row => {
-            mapData[row.state] = row.total_verified_pensioners;
-        });
-
-        res.json({
-            success: true,
-            map_data: mapData,
-            total_states: rows.length,
-            max_value: Math.max(...rows.map(r => r.total_verified_pensioners)),
-            min_value: Math.min(...rows.map(r => r.total_verified_pensioners)),
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('Error in simple map data API:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch simple map data',
-            details: error.message
-        });
-    } finally {
-        closeDb();
-    }
-});
 
 // Enhanced State-wise Bank Verification Summary with Pincode Data and Filtering
 app.get('/api/choropleth/state-bank-summary/:stateName', async (req, res) => {
@@ -6817,733 +6134,7 @@ app.get('/api/choropleth/state-bank-summary/:stateName', async (req, res) => {
     }
 });
 
-// NEW: Comprehensive Bank-Pincode Data API for All States with Advanced Filtering
-app.get('/api/choropleth/comprehensive-bank-data', async (req, res) => {
-    const {
-        state,
-        bank_name,
-        district,
-        pincode,
-        min_pensioners = 0,
-        verification_rate_min = 0,
-        verification_rate_max = 100,
-        limit = 500,
-        offset = 0
-    } = req.query;
 
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
-    const closeDb = () => {
-        db.close(err => {
-            if (err) {
-                console.warn('Warning: failed to close database connection', err.message);
-            }
-        });
-    };
-
-    try {
-        // Build dynamic filtering conditions for DOPPW data
-        let doppwConditions = [];
-        let doppwParams = [];
-
-        if (state) {
-            doppwConditions.push(`UPPER(TRIM(pensioner_state)) LIKE UPPER(TRIM(?))`);
-            doppwParams.push(`%${state}%`);
-        }
-
-        if (bank_name) {
-            doppwConditions.push(`UPPER(TRIM(branch_name)) LIKE UPPER(TRIM(?))`);
-            doppwParams.push(`%${bank_name}%`);
-        }
-
-        if (district) {
-            doppwConditions.push(`UPPER(TRIM(pensioner_district)) LIKE UPPER(TRIM(?))`);
-            doppwParams.push(`%${district}%`);
-        }
-
-        if (pincode) {
-            doppwConditions.push(`pensioner_pincode = ?`);
-            doppwParams.push(pincode);
-        }
-
-        const doppwWhereClause = doppwConditions.length > 0 ? 'AND ' + doppwConditions.join(' AND ') : '';
-
-        // Simplified query focusing on DOPPW data (main verification table)
-        let baseQuery = `
-            SELECT 
-                UPPER(TRIM(pensioner_state)) as state_name,
-                branch_name as bank_name,
-                pensioner_district as district,
-                pensioner_pincode as pincode,
-                COUNT(*) as total_pensioners,
-                COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) as verified_pensioners,
-                COUNT(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 END) as pending_pensioners,
-                ROUND((COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) * 100.0 / COUNT(*)), 2) as verification_rate
-            FROM doppw_pensioner_data
-            WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                AND branch_name IS NOT NULL AND branch_name != ''
-                AND pensioner_district IS NOT NULL AND pensioner_district != ''
-                AND pensioner_pincode IS NOT NULL AND pensioner_pincode != ''
-        `;
-
-        if (doppwWhereClause) {
-            baseQuery += ` ${doppwWhereClause}`;
-        }
-
-        baseQuery += `
-            GROUP BY pensioner_state, branch_name, pensioner_district, pensioner_pincode
-            HAVING COUNT(*) >= ?
-        `;
-
-        // Add verification rate filters
-        if (verification_rate_min > 0) {
-            baseQuery += ` AND verification_rate >= ?`;
-        }
-        if (verification_rate_max < 100) {
-            baseQuery += ` AND verification_rate <= ?`;
-        }
-
-        baseQuery += `
-            ORDER BY verified_pensioners DESC
-            LIMIT ? OFFSET ?
-        `;
-
-        const comprehensiveQuery = baseQuery;
-
-        // Build parameters array
-        let finalParams = [...doppwParams, parseInt(min_pensioners)];
-
-        if (verification_rate_min > 0) {
-            finalParams.push(parseFloat(verification_rate_min));
-        }
-        if (verification_rate_max < 100) {
-            finalParams.push(parseFloat(verification_rate_max));
-        }
-
-        finalParams.push(parseInt(limit), parseInt(offset));
-
-        const comprehensiveData = await new Promise((resolve, reject) => {
-            db.all(comprehensiveQuery, finalParams, (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows || []);
-                }
-            });
-        });
-
-        // Get summary statistics
-        const summaryQuery = `
-            SELECT 
-                COUNT(DISTINCT UPPER(TRIM(pensioner_state))) as total_states,
-                COUNT(DISTINCT branch_name) as total_banks,
-                COUNT(DISTINCT pensioner_district) as total_districts,
-                COUNT(DISTINCT pensioner_pincode) as total_pincodes,
-                COUNT(*) as grand_total_pensioners,
-                COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) as grand_total_verified,
-                ROUND((COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) * 100.0 / COUNT(*)), 2) as overall_verification_rate
-            FROM doppw_pensioner_data
-            WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                AND branch_name IS NOT NULL AND branch_name != ''
-                AND pensioner_district IS NOT NULL AND pensioner_district != ''
-                AND pensioner_pincode IS NOT NULL AND pensioner_pincode != ''
-        `;
-
-        const summaryStats = await new Promise((resolve, reject) => {
-            db.get(summaryQuery, [], (err, row) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(row || {});
-                }
-            });
-        });
-
-        // Get state-wise summary (simplified)
-        let stateQuery = `
-            SELECT 
-                UPPER(TRIM(pensioner_state)) as state_name,
-                COUNT(DISTINCT branch_name) as banks_count,
-                COUNT(DISTINCT pensioner_district) as districts_count,
-                COUNT(DISTINCT pensioner_pincode) as pincodes_count,
-                COUNT(*) as state_total_pensioners,
-                COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) as state_verified_pensioners,
-                ROUND((COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) * 100.0 / COUNT(*)), 2) as state_verification_rate
-            FROM doppw_pensioner_data
-            WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                AND branch_name IS NOT NULL AND branch_name != ''
-                AND pensioner_district IS NOT NULL AND pensioner_district != ''
-                AND pensioner_pincode IS NOT NULL AND pensioner_pincode != ''
-        `;
-
-        if (doppwWhereClause) {
-            stateQuery += ` ${doppwWhereClause}`;
-        }
-
-        stateQuery += `
-            GROUP BY pensioner_state
-            ORDER BY state_verified_pensioners DESC
-        `;
-
-        const stateWiseQuery = stateQuery;
-        let stateParams = [...doppwParams];
-
-        const stateWiseData = await new Promise((resolve, reject) => {
-            db.all(stateWiseQuery, stateParams, (err, rows) => {
-                if (err) {
-                    console.warn('State-wise summary query failed:', err.message);
-                    resolve([]);
-                } else {
-                    resolve(rows || []);
-                }
-            });
-        });
-
-        // Get total count for pagination (simplified)
-        let countBaseQuery = `
-            SELECT COUNT(*) as total_records
-            FROM (
-                SELECT 1
-                FROM doppw_pensioner_data
-                WHERE pensioner_state IS NOT NULL AND pensioner_state != 'nan' AND pensioner_state != ''
-                    AND branch_name IS NOT NULL AND branch_name != ''
-                    AND pensioner_district IS NOT NULL AND pensioner_district != ''
-                    AND pensioner_pincode IS NOT NULL AND pensioner_pincode != ''
-        `;
-
-        if (doppwWhereClause) {
-            countBaseQuery += ` ${doppwWhereClause}`;
-        }
-
-        countBaseQuery += `
-                GROUP BY pensioner_state, branch_name, pensioner_district, pensioner_pincode
-                HAVING COUNT(*) >= ?
-            )
-        `;
-
-        const countQuery = countBaseQuery;
-        let countParams = [...doppwParams, parseInt(min_pensioners)];
-
-        const totalCount = await new Promise((resolve, reject) => {
-            db.get(countQuery, countParams, (err, row) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(row?.total_records || 0);
-                }
-            });
-        });
-
-        res.json({
-            success: true,
-            message: "Comprehensive bank-pincode data from entire database with advanced filtering",
-            filters_applied: {
-                state: state || null,
-                bank_name: bank_name || null,
-                district: district || null,
-                pincode: pincode || null,
-                min_pensioners: parseInt(min_pensioners),
-                verification_rate_range: `${verification_rate_min}% - ${verification_rate_max}%`
-            },
-            comprehensive_data: comprehensiveData,
-            state_wise_summary: stateWiseData,
-            pagination: {
-                total_records: totalCount,
-                current_page: Math.floor(offset / limit) + 1,
-                total_pages: Math.ceil(totalCount / limit),
-                limit: parseInt(limit),
-                offset: parseInt(offset),
-                has_next: (parseInt(offset) + parseInt(limit)) < totalCount,
-                has_previous: parseInt(offset) > 0
-            },
-            national_summary: {
-                total_states: summaryStats.total_states || 0,
-                total_banks: summaryStats.total_banks || 0,
-                total_districts: summaryStats.total_districts || 0,
-                total_pincodes: summaryStats.total_pincodes || 0,
-                grand_total_pensioners: summaryStats.grand_total_pensioners || 0,
-                grand_total_verified: summaryStats.grand_total_verified || 0,
-                overall_verification_rate: summaryStats.overall_verification_rate || 0,
-                filtered_records_count: totalCount
-            },
-            data_sources: [
-                'doppw_pensioner_data (main verification table with complete pincode data)'
-            ],
-            api_usage_examples: {
-                filter_by_state: `/api/choropleth/comprehensive-bank-data?state=Maharashtra`,
-                filter_by_bank: `/api/choropleth/comprehensive-bank-data?bank_name=State Bank`,
-                filter_by_pincode: `/api/choropleth/comprehensive-bank-data?pincode=400001`,
-                filter_by_verification_rate: `/api/choropleth/comprehensive-bank-data?verification_rate_min=90&verification_rate_max=100`,
-                filter_by_pensioner_count: `/api/choropleth/comprehensive-bank-data?min_pensioners=1000`,
-                combined_filters: `/api/choropleth/comprehensive-bank-data?state=Maharashtra&bank_name=SBI&min_pensioners=500&verification_rate_min=85`,
-                pagination: `/api/choropleth/comprehensive-bank-data?limit=100&offset=200`
-            },
-            timestamp: new Date().toISOString()
-        });
-
-    } catch (error) {
-        console.error('Error in comprehensive bank data API:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch comprehensive bank data',
-            details: error.message
-        });
-    } finally {
-        closeDb();
-    }
-});
-
-// ============================================================================
-// PINCODE-WISE PENSIONER DATA API
-// ============================================================================
-
-// Comprehensive Pincode-wise Pensioner Data for any State
-app.get('/api/geography/detailed-lists/:stateName', async (req, res) => {
-    const { stateName } = req.params;
-    const { type = 'pincodes', limit = 1000 } = req.query;
-
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
-    const closeDb = () => {
-        db.close(err => {
-            if (err) {
-                console.warn('Warning: failed to close database connection', err.message);
-            }
-        });
-    };
-
-    try {
-        // Handle state name variations, especially for Uttar Pradesh
-        let stateVariations = [];
-        const normalizedState = stateName.toUpperCase().trim();
-
-        if (normalizedState.includes('UTTAR') || normalizedState === 'UTTARPRADESH') {
-            stateVariations = ['UTTAR PRADESH', 'UTTARPRADESH', 'UTTARAKHAND', 'UTTARANCHAL'];
-        } else {
-            stateVariations = [normalizedState, normalizedState.replace(/\s+/g, '')];
-        }
-
-        let response = {
-            success: true,
-            state: normalizedState,
-            type: type,
-            timestamp: new Date().toISOString()
-        };
-
-        // Enhanced pincode-wise data query with better data quality
-        if (type === 'all' || type === 'pincodes') {
-            // First, try to get data from the dedicated pensioner_pincode_data table
-            const pincodeDataQuery = `
-                SELECT 
-                    pincode,
-                    COALESCE(NULLIF(TRIM(district), ''), NULLIF(TRIM(city), ''), 'Unknown District') as district,
-                    city,
-                    SUM(total_pensioners) as totalPensioners,
-                    SUM(age_less_than_80) as ageLessThan80,
-                    SUM(age_more_than_80) as ageMoreThan80,
-                    SUM(age_not_available) as ageNotAvailable,
-                    COUNT(DISTINCT bank_name) as uniqueBanks,
-                    GROUP_CONCAT(DISTINCT data_source) as dataSources
-                FROM pensioner_pincode_data
-                WHERE UPPER(TRIM(state)) IN (?, ?, ?, ?)
-                    AND pincode IS NOT NULL 
-                    AND pincode != '' 
-                    AND pincode != 'nan'
-                    AND LENGTH(pincode) = 6
-                    AND pincode GLOB '[0-9][0-9][0-9][0-9][0-9][0-9]'
-                    AND CAST(pincode AS INTEGER) BETWEEN 100000 AND 999999
-                    AND pincode NOT IN ('111111', '222222', '333333', '444444', '555555', '666666', '777777', '888888', '999999', '000000', '123456')
-                    AND total_pensioners > 0
-                GROUP BY pincode
-                ORDER BY totalPensioners DESC
-                ${limit ? `LIMIT ${parseInt(limit)}` : ''}
-            `;
-
-            let pincodes = await new Promise((resolve, reject) => {
-                console.log('Executing pincode query with state variations:', stateVariations);
-                db.all(pincodeDataQuery, stateVariations, (err, rows) => {
-                    if (err) {
-                        console.warn('Pincode data query failed:', err.message);
-                        resolve([]);
-                    } else {
-                        console.log(`Found ${rows ? rows.length : 0} pincodes from pensioner_pincode_data`);
-                        resolve(rows || []);
-                    }
-                });
-            });
-
-            // If no data from pensioner_pincode_data, fall back to other tables
-            if (pincodes.length === 0) {
-                const fallbackQuery = `
-                    WITH pincode_data AS (
-                        -- DOPPW Pensioner Data (Main verification table)
-                        SELECT 
-                            pensioner_pincode as pincode,
-                            pensioner_district as district,
-                            NULL as city,
-                            COUNT(*) as total_pensioners,
-                            COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) as verified_pensioners,
-                            COUNT(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 END) as pending_pensioners,
-                            COUNT(DISTINCT branch_name) as unique_banks,
-                            'doppw_pensioner_data' as source_table
-                        FROM doppw_pensioner_data
-                        WHERE UPPER(TRIM(pensioner_state)) IN (${stateVariations.map(() => '?').join(', ')})
-                            AND pensioner_pincode IS NOT NULL 
-                            AND pensioner_pincode != 'nan' 
-                            AND pensioner_pincode != ''
-                            AND LENGTH(pensioner_pincode) = 6
-                            AND pensioner_pincode GLOB '[0-9][0-9][0-9][0-9][0-9][0-9]'
-                            AND CAST(pensioner_pincode AS INTEGER) BETWEEN 100000 AND 999999
-                        GROUP BY pensioner_pincode, pensioner_district
-                        
-                        UNION ALL
-                        
-                        -- Bank Pensioner Data
-                        SELECT 
-                            branch_pin_code as pincode,
-                            bank_city as district,
-                            bank_city as city,
-                            SUM(COALESCE(grand_total, 0)) as total_pensioners,
-                            SUM(COALESCE(grand_total, 0)) as verified_pensioners,
-                            0 as pending_pensioners,
-                            COUNT(DISTINCT bank_name) as unique_banks,
-                            'bank_pensioner_data' as source_table
-                        FROM bank_pensioner_data
-                        WHERE UPPER(TRIM(bank_state)) IN (${stateVariations.map(() => '?').join(', ')})
-                            AND branch_pin_code IS NOT NULL 
-                            AND branch_pin_code != 'nan' 
-                            AND branch_pin_code != ''
-                            AND LENGTH(branch_pin_code) = 6
-                            AND branch_pin_code GLOB '[0-9][0-9][0-9][0-9][0-9][0-9]'
-                            AND CAST(branch_pin_code AS INTEGER) BETWEEN 100000 AND 999999
-                        GROUP BY branch_pin_code, bank_city
-                        
-                        UNION ALL
-                        
-                        -- UBI1 Pensioner Data
-                        SELECT 
-                            pensioner_pincode as pincode,
-                            pensioner_city as district,
-                            pensioner_city as city,
-                            COUNT(*) as total_pensioners,
-                            COUNT(CASE WHEN is_valid = 1 THEN 1 END) as verified_pensioners,
-                            COUNT(CASE WHEN is_valid != 1 OR is_valid IS NULL THEN 1 END) as pending_pensioners,
-                            COUNT(DISTINCT bank_name) as unique_banks,
-                            'ubi1_pensioner_data' as source_table
-                        FROM ubi1_pensioner_data
-                        WHERE UPPER(TRIM(pensioner_state)) IN (${stateVariations.map(() => '?').join(', ')})
-                            AND pensioner_pincode IS NOT NULL 
-                            AND pensioner_pincode != 'nan' 
-                            AND pensioner_pincode != ''
-                            AND LENGTH(pensioner_pincode) = 6
-                            AND pensioner_pincode GLOB '[0-9][0-9][0-9][0-9][0-9][0-9]'
-                            AND CAST(pensioner_pincode AS INTEGER) BETWEEN 100000 AND 999999
-                        GROUP BY pensioner_pincode, pensioner_city
-                        
-                        UNION ALL
-                        
-                        -- UBI3 Pensioner Data
-                        SELECT 
-                            pensioner_pincode as pincode,
-                            pensioner_city as district,
-                            pensioner_city as city,
-                            COUNT(*) as total_pensioners,
-                            COUNT(CASE WHEN is_valid = 1 THEN 1 END) as verified_pensioners,
-                            COUNT(CASE WHEN is_valid != 1 OR is_valid IS NULL THEN 1 END) as pending_pensioners,
-                            COUNT(DISTINCT bank_name) as unique_banks,
-                            'ubi3_pensioner_data' as source_table
-                        FROM ubi3_pensioner_data
-                        WHERE UPPER(TRIM(pensioner_state)) IN (${stateVariations.map(() => '?').join(', ')})
-                            AND pensioner_pincode IS NOT NULL 
-                            AND pensioner_pincode != 'nan' 
-                            AND pensioner_pincode != ''
-                            AND LENGTH(pensioner_pincode) = 6
-                            AND pensioner_pincode GLOB '[0-9][0-9][0-9][0-9][0-9][0-9]'
-                            AND CAST(pensioner_pincode AS INTEGER) BETWEEN 100000 AND 999999
-                        GROUP BY pensioner_pincode, pensioner_city
-                    )
-                    SELECT 
-                        pincode,
-                        COALESCE(NULLIF(TRIM(district), ''), 'Unknown District') as district,
-                        city,
-                        SUM(total_pensioners) as totalPensioners,
-                        SUM(verified_pensioners) as verifiedPensioners,
-                        SUM(pending_pensioners) as pendingPensioners,
-                        SUM(unique_banks) as uniqueBanks,
-                        ROUND((SUM(verified_pensioners) * 100.0 / NULLIF(SUM(total_pensioners), 0)), 2) as verificationRate,
-                        GROUP_CONCAT(DISTINCT source_table) as dataSources
-                    FROM pincode_data
-                    WHERE total_pensioners > 0
-                    GROUP BY pincode
-                    ORDER BY totalPensioners DESC
-                    ${limit ? `LIMIT ${parseInt(limit)}` : ''}
-                `;
-
-                const allStateParams = stateVariations.concat(stateVariations, stateVariations, stateVariations);
-
-                pincodes = await new Promise((resolve, reject) => {
-                    db.all(fallbackQuery, allStateParams, (err, rows) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve(rows || []);
-                        }
-                    });
-                });
-            }
-
-            // Format the response
-            response.pincodes = pincodes.map(row => ({
-                pincode: row.pincode,
-                district: row.district,
-                city: row.city,
-                totalPensioners: row.totalPensioners,
-                verifiedPensioners: row.verifiedPensioners || 0,
-                pendingPensioners: row.pendingPensioners || 0,
-                verificationRate: row.verificationRate || 0,
-                uniqueBanks: row.uniqueBanks || 0,
-                ageBreakdown: {
-                    lessThan80: row.ageLessThan80 || 0,
-                    moreThan80: row.ageMoreThan80 || 0,
-                    ageNotAvailable: row.ageNotAvailable || 0
-                },
-                dataSources: row.dataSources ? row.dataSources.split(',') : []
-            }));
-        }
-
-        // Districts data query
-        if (type === 'all' || type === 'districts') {
-            const districtQuery = `
-                WITH district_data AS (
-                    SELECT 
-                        pensioner_district as district,
-                        COUNT(*) as total_pensioners,
-                        COUNT(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 END) as verified_pensioners,
-                        COUNT(DISTINCT pensioner_pincode) as unique_pincodes,
-                        COUNT(DISTINCT branch_name) as unique_banks
-                    FROM doppw_pensioner_data
-                    WHERE UPPER(TRIM(pensioner_state)) = UPPER(TRIM(?))
-                        AND pensioner_district IS NOT NULL 
-                        AND pensioner_district != 'nan' 
-                        AND pensioner_district != ''
-                    GROUP BY pensioner_district
-                    
-                    UNION ALL
-                    
-                    SELECT 
-                        bank_city as district,
-                        SUM(COALESCE(grand_total, 0)) as total_pensioners,
-                        SUM(COALESCE(grand_total, 0)) as verified_pensioners,
-                        COUNT(DISTINCT branch_pin_code) as unique_pincodes,
-                        COUNT(DISTINCT bank_name) as unique_banks
-                    FROM bank_pensioner_data
-                    WHERE UPPER(TRIM(bank_state)) = UPPER(TRIM(?))
-                        AND bank_city IS NOT NULL 
-                        AND bank_city != 'nan' 
-                        AND bank_city != ''
-                    GROUP BY bank_city
-                )
-                SELECT 
-                    district,
-                    SUM(total_pensioners) as totalPensioners,
-                    SUM(verified_pensioners) as verifiedPensioners,
-                    SUM(total_pensioners) - SUM(verified_pensioners) as pendingPensioners,
-                    MAX(unique_pincodes) as totalPincodes,
-                    SUM(unique_banks) as uniqueBanks,
-                    ROUND((SUM(verified_pensioners) * 100.0 / NULLIF(SUM(total_pensioners), 0)), 2) as verificationRate
-                FROM district_data
-                GROUP BY district
-                ORDER BY totalPensioners DESC
-                ${limit ? `LIMIT ${parseInt(limit)}` : ''}
-            `;
-
-            const districts = await new Promise((resolve, reject) => {
-                db.all(districtQuery, [stateName, stateName], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows || []);
-                    }
-                });
-            });
-
-            response.districts = districts;
-        }
-
-        // Cities data query (from UBI tables)
-        if (type === 'all' || type === 'cities') {
-            const cityQuery = `
-                WITH city_data AS (
-                    SELECT 
-                        pensioner_city as city,
-                        COUNT(*) as total_pensioners,
-                        COUNT(CASE WHEN is_valid = 1 THEN 1 END) as verified_pensioners,
-                        COUNT(DISTINCT pensioner_pincode) as unique_pincodes,
-                        COUNT(DISTINCT bank_name) as unique_banks
-                    FROM ubi1_pensioner_data
-                    WHERE UPPER(TRIM(pensioner_state)) = UPPER(TRIM(?))
-                        AND pensioner_city IS NOT NULL 
-                        AND pensioner_city != 'nan' 
-                        AND pensioner_city != ''
-                    GROUP BY pensioner_city
-                    
-                    UNION ALL
-                    
-                    SELECT 
-                        pensioner_city as city,
-                        COUNT(*) as total_pensioners,
-                        COUNT(CASE WHEN is_valid = 1 THEN 1 END) as verified_pensioners,
-                        COUNT(DISTINCT pensioner_pincode) as unique_pincodes,
-                        COUNT(DISTINCT bank_name) as unique_banks
-                    FROM ubi3_pensioner_data
-                    WHERE UPPER(TRIM(pensioner_state)) = UPPER(TRIM(?))
-                        AND pensioner_city IS NOT NULL 
-                        AND pensioner_city != 'nan' 
-                        AND pensioner_city != ''
-                    GROUP BY pensioner_city
-                )
-                SELECT 
-                    city,
-                    SUM(total_pensioners) as totalPensioners,
-                    SUM(verified_pensioners) as verifiedPensioners,
-                    SUM(total_pensioners) - SUM(verified_pensioners) as pendingPensioners,
-                    MAX(unique_pincodes) as totalPincodes,
-                    SUM(unique_banks) as uniqueBanks,
-                    ROUND((SUM(verified_pensioners) * 100.0 / NULLIF(SUM(total_pensioners), 0)), 2) as verificationRate
-                FROM city_data
-                GROUP BY city
-                ORDER BY totalPensioners DESC
-                ${limit ? `LIMIT ${parseInt(limit)}` : ''}
-            `;
-
-            const cities = await new Promise((resolve, reject) => {
-                db.all(cityQuery, [stateName, stateName], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve(rows || []);
-                    }
-                });
-            });
-
-            response.cities = cities;
-        }
-
-        // Enhanced summary statistics using pensioner_pincode_data first
-        let summary = {};
-
-        // Try pensioner_pincode_data first
-        const pincodeDataSummaryQuery = `
-            SELECT 
-                COUNT(DISTINCT pincode) as total_pincodes,
-                COUNT(DISTINCT COALESCE(NULLIF(TRIM(district), ''), NULLIF(TRIM(city), ''), 'Unknown')) as total_districts,
-                SUM(total_pensioners) as total_pensioners,
-                COUNT(DISTINCT city) as total_cities
-            FROM pensioner_pincode_data
-            WHERE UPPER(TRIM(state)) IN (${stateVariations.map(() => '?').join(', ')})
-                AND pincode IS NOT NULL 
-                AND pincode != 'nan' 
-                AND pincode != ''
-                AND LENGTH(pincode) = 6
-                AND pincode GLOB '[0-9][0-9][0-9][0-9][0-9][0-9]'
-                AND CAST(pincode AS INTEGER) BETWEEN 100000 AND 999999
-                AND pincode NOT IN ('111111', '222222', '333333', '444444', '555555', '666666', '777777', '888888', '999999', '000000', '123456')
-                AND total_pensioners > 0
-        `;
-
-        summary = await new Promise((resolve, reject) => {
-            db.get(pincodeDataSummaryQuery, stateVariations, (err, row) => {
-                if (err) {
-                    console.warn('Pincode data summary query error:', err.message);
-                    resolve({});
-                } else {
-                    resolve(row || {});
-                }
-            });
-        });
-
-        // If no data from pensioner_pincode_data, fall back to other tables
-        if (!summary.total_pensioners || summary.total_pensioners === 0) {
-            const fallbackSummaryQuery = `
-                WITH combined_data AS (
-                    SELECT pensioner_pincode as pincode, pensioner_district as district, 1 as pensioner_count
-                    FROM doppw_pensioner_data
-                    WHERE UPPER(TRIM(pensioner_state)) IN (${stateVariations.map(() => '?').join(', ')})
-                        AND pensioner_pincode IS NOT NULL 
-                        AND pensioner_pincode != 'nan' 
-                        AND pensioner_pincode != ''
-                        AND LENGTH(pensioner_pincode) = 6
-                    
-                    UNION ALL
-                    
-                    SELECT pensioner_pincode as pincode, pensioner_city as district, 1 as pensioner_count
-                    FROM ubi1_pensioner_data
-                    WHERE UPPER(TRIM(pensioner_state)) IN (${stateVariations.map(() => '?').join(', ')})
-                        AND pensioner_pincode IS NOT NULL 
-                        AND pensioner_pincode != 'nan' 
-                        AND pensioner_pincode != ''
-                        AND LENGTH(pensioner_pincode) = 6
-                    
-                    UNION ALL
-                    
-                    SELECT pensioner_pincode as pincode, pensioner_city as district, 1 as pensioner_count
-                    FROM ubi3_pensioner_data
-                    WHERE UPPER(TRIM(pensioner_state)) IN (${stateVariations.map(() => '?').join(', ')})
-                        AND pensioner_pincode IS NOT NULL 
-                        AND pensioner_pincode != 'nan' 
-                        AND pensioner_pincode != ''
-                        AND LENGTH(pensioner_pincode) = 6
-                )
-                SELECT 
-                    COUNT(DISTINCT pincode) as total_pincodes,
-                    COUNT(DISTINCT district) as total_districts,
-                    COUNT(*) as total_pensioners,
-                    COUNT(DISTINCT district) as total_cities
-                FROM combined_data
-            `;
-
-            const allStateParams = stateVariations.concat(stateVariations, stateVariations);
-
-            summary = await new Promise((resolve, reject) => {
-                db.get(fallbackSummaryQuery, allStateParams, (err, row) => {
-                    if (err) {
-                        console.warn('Fallback summary query error:', err.message);
-                        resolve({});
-                    } else {
-                        resolve(row || {});
-                    }
-                });
-            });
-        }
-
-        response.summary = {
-            totalDistricts: summary.total_districts || 0,
-            totalCities: summary.total_cities || 0,
-            totalPincodes: summary.total_pincodes || 0,
-            totalPensioners: summary.total_pensioners || 0,
-            dataSource: summary.total_pensioners > 0 ? 'pensioner_pincode_data' : 'multiple_tables'
-        };
-
-        response.dataSources = [
-            'doppw_pensioner_data (main verification table)',
-            'bank_pensioner_data (bank aggregated data)',
-            'ubi1_pensioner_data (UBI1 individual records)',
-            'ubi3_pensioner_data (UBI3 individual records)'
-        ];
-
-        res.json(response);
-
-    } catch (error) {
-        console.error('Error in pincode analysis API:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch pincode data',
-            details: error.message
-        });
-    } finally {
-        closeDb();
-    }
-});
 
 // Quick Pincode Summary API - Just pincode and pensioner count
 app.get('/api/geography/pincode-summary/:stateName', async (req, res) => {
@@ -7634,7 +6225,6 @@ app.get('/api/geography/pincode-summary/:stateName', async (req, res) => {
 });
 
 // Mount Excel Analyzer API routes
-app.use(excelAnalyzerRouter);
 
 // Start server
 app.listen(PORT, HOST, () => {
@@ -7660,18 +6250,10 @@ app.listen(PORT, HOST, () => {
     console.log(`⚡ Simple Map Data: http://${HOST}:${PORT}/api/choropleth/simple-map-data`);
     console.log(`🏛️  Enhanced State Bank Summary: http://${HOST}:${PORT}/api/choropleth/state-bank-summary/:stateName`);
     console.log(`🏦 NEW: Comprehensive Bank Data: http://${HOST}:${PORT}/api/choropleth/comprehensive-bank-data`);
-    console.log(`\n🔍 FILTERING EXAMPLES:`);
-    console.log(`   📍 By State: /api/choropleth/comprehensive-bank-data?state=Maharashtra`);
-    console.log(`   🏦 By Bank: /api/choropleth/comprehensive-bank-data?bank_name=SBI`);
-    console.log(`   📮 By Pincode: /api/choropleth/comprehensive-bank-data?pincode=400001`);
-    console.log(`   📊 By Verification Rate: /api/choropleth/comprehensive-bank-data?verification_rate_min=90`);
-    console.log(`   👥 By Pensioner Count: /api/choropleth/comprehensive-bank-data?min_pensioners=1000`);
     console.log(`   🔗 Combined Filters: /api/choropleth/comprehensive-bank-data?state=Maharashtra&bank_name=SBI&min_pensioners=500`);
     console.log(`\n📍 NEW PINCODE-WISE APIs:`);
     console.log(`🏘️  Detailed Lists: http://${HOST}:${PORT}/api/geography/detailed-lists/:stateName?type=pincodes&limit=1000`);
     console.log(`📮 Pincode Summary: http://${HOST}:${PORT}/api/geography/pincode-summary/:stateName`);
-    console.log(`\n🚀 SBI EIS GEN 6 Server listening on ${HOST}:${PORT}`);
-    console.log(`📊 Excel Files Manager: http://${HOST}:${PORT}/excel-files.html`);
     console.log(`🏥 Health check: http://${HOST}:${PORT}/health`);
 });
 
@@ -7709,696 +6291,6 @@ app.post('/api/sbi/get-verification-data', async (req, res) => {
 });
 */
 
-// Excel Files Management API
-// fs and path already required above
-
-// Get all Excel files in the Excel Files directory
-app.get('/api/excel-files', async (req, res) => {
-    try {
-        const excelDir = path.join(__dirname, 'Excel Files');
-        console.log(`📁 Scanning Excel files directory: ${excelDir}`);
-
-        if (!fs.existsSync(excelDir)) {
-            return res.status(404).json({
-                success: false,
-                message: 'Excel Files directory not found',
-                path: excelDir
-            });
-        }
-
-        // Function to recursively get all Excel files
-        function getExcelFiles(dir, relativePath = '') {
-            const files = [];
-            const items = fs.readdirSync(dir);
-
-            for (const item of items) {
-                const fullPath = path.join(dir, item);
-                const relativeItemPath = path.join(relativePath, item);
-                const stats = fs.statSync(fullPath);
-
-                if (stats.isDirectory()) {
-                    // Recursively get files from subdirectories
-                    const subFiles = getExcelFiles(fullPath, relativeItemPath);
-                    files.push(...subFiles);
-                } else if (stats.isFile() && (item.endsWith('.xlsx') || item.endsWith('.xls'))) {
-                    files.push({
-                        name: item,
-                        path: relativeItemPath,
-                        fullPath: fullPath,
-                        size: stats.size,
-                        sizeFormatted: formatFileSize(stats.size),
-                        lastModified: stats.mtime,
-                        lastModifiedFormatted: stats.mtime.toLocaleString('en-IN'),
-                        directory: relativePath || 'Root',
-                        extension: path.extname(item)
-                    });
-                }
-            }
-
-            return files;
-        }
-
-        // Helper function to format file size
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        const excelFiles = getExcelFiles(excelDir);
-
-        // Group files by directory
-        const filesByDirectory = {};
-        excelFiles.forEach(file => {
-            const dir = file.directory;
-            if (!filesByDirectory[dir]) {
-                filesByDirectory[dir] = [];
-            }
-            filesByDirectory[dir].push(file);
-        });
-
-        // Calculate statistics
-        const stats = {
-            totalFiles: excelFiles.length,
-            totalSize: excelFiles.reduce((sum, file) => sum + file.size, 0),
-            directories: Object.keys(filesByDirectory).length,
-            byExtension: {
-                xlsx: excelFiles.filter(f => f.extension === '.xlsx').length,
-                xls: excelFiles.filter(f => f.extension === '.xls').length
-            }
-        };
-
-        stats.totalSizeFormatted = formatFileSize(stats.totalSize);
-
-        console.log(`✅ Found ${excelFiles.length} Excel files in ${Object.keys(filesByDirectory).length} directories`);
-
-        res.json({
-            success: true,
-            message: `Found ${excelFiles.length} Excel files`,
-            data: {
-                files: excelFiles,
-                filesByDirectory: filesByDirectory,
-                statistics: stats
-            }
-        });
-
-    } catch (error) {
-        console.error('Error scanning Excel files:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Failed to scan Excel files'
-        });
-    }
-});
-
-// Get available dates (directories) in Excel Files folder
-app.get('/api/excel-files/dates', async (req, res) => {
-    try {
-        const excelDir = path.join(__dirname, 'Excel Files');
-
-        if (!fs.existsSync(excelDir)) {
-            return res.json({
-                success: true,
-                message: 'No Excel Files directory found',
-                data: { dates: [] }
-            });
-        }
-
-        const items = fs.readdirSync(excelDir);
-        const dates = [];
-
-        // Add root directory files
-        const rootFiles = items.filter(item => {
-            const fullPath = path.join(excelDir, item);
-            return fs.statSync(fullPath).isFile() && (item.endsWith('.xlsx') || item.endsWith('.xls'));
-        });
-
-        if (rootFiles.length > 0) {
-            dates.push({
-                folder: 'Root',
-                displayName: 'Older Files (Root)',
-                fileCount: rootFiles.length,
-                isDirectory: false
-            });
-        }
-
-        // Add date directories
-        const directories = items.filter(item => {
-            const fullPath = path.join(excelDir, item);
-            return fs.statSync(fullPath).isDirectory();
-        }).sort().reverse(); // Most recent first
-
-        directories.forEach(dir => {
-            const dirPath = path.join(excelDir, dir);
-            const dirFiles = fs.readdirSync(dirPath).filter(file =>
-                file.endsWith('.xlsx') || file.endsWith('.xls')
-            );
-
-            if (dirFiles.length > 0) {
-                dates.push({
-                    folder: dir,
-                    displayName: `${dir} (${dirFiles.length} files)`,
-                    fileCount: dirFiles.length,
-                    isDirectory: true
-                });
-            }
-        });
-
-        res.json({
-            success: true,
-            message: `Found ${dates.length} date folders`,
-            data: { dates }
-        });
-
-    } catch (error) {
-        console.error('Error getting dates:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Failed to get available dates'
-        });
-    }
-});
-
-// Get Excel files by date
-app.get('/api/excel-files/by-date/:dateFolder', async (req, res) => {
-    try {
-        const { dateFolder } = req.params;
-        const excelDir = path.join(__dirname, 'Excel Files');
-
-        let targetDir;
-        if (dateFolder === 'Root') {
-            targetDir = excelDir;
-        } else {
-            targetDir = path.join(excelDir, dateFolder);
-        }
-
-        if (!fs.existsSync(targetDir)) {
-            return res.status(404).json({
-                success: false,
-                message: `Date folder '${dateFolder}' not found`
-            });
-        }
-
-        const files = [];
-        const items = fs.readdirSync(targetDir);
-
-        for (const item of items) {
-            const fullPath = path.join(targetDir, item);
-            const stats = fs.statSync(fullPath);
-
-            if (stats.isFile() && (item.endsWith('.xlsx') || item.endsWith('.xls'))) {
-                const filePath = dateFolder === 'Root' ? item : `${dateFolder}/${item}`;
-
-                files.push({
-                    name: item,
-                    path: filePath,
-                    fullPath: fullPath,
-                    size: stats.size,
-                    sizeFormatted: formatFileSize(stats.size),
-                    lastModified: stats.mtime,
-                    lastModifiedFormatted: stats.mtime.toLocaleString('en-IN'),
-                    directory: dateFolder,
-                    extension: path.extname(item)
-                });
-            }
-        }
-
-        // Sort by last modified (newest first)
-        files.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-
-        res.json({
-            success: true,
-            message: `Found ${files.length} Excel files in ${dateFolder}`,
-            data: {
-                files,
-                dateFolder,
-                fileCount: files.length,
-                totalSize: files.reduce((sum, file) => sum + file.size, 0),
-                totalSizeFormatted: formatFileSize(files.reduce((sum, file) => sum + file.size, 0))
-            }
-        });
-
-    } catch (error) {
-        console.error('Error getting files by date:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Failed to get files by date'
-        });
-    }
-});
-
-// Get details of a specific Excel file
-app.get('/api/excel-files/:filename', async (req, res) => {
-    try {
-        const filename = req.params.filename;
-        const excelDir = path.join(__dirname, 'Excel Files');
-
-        // Find the file recursively
-        function findFile(dir, targetFile) {
-            const items = fs.readdirSync(dir);
-
-            for (const item of items) {
-                const fullPath = path.join(dir, item);
-                const stats = fs.statSync(fullPath);
-
-                if (stats.isDirectory()) {
-                    const found = findFile(fullPath, targetFile);
-                    if (found) return found;
-                } else if (item === targetFile) {
-                    return {
-                        name: item,
-                        fullPath: fullPath,
-                        size: stats.size,
-                        sizeFormatted: formatFileSize(stats.size),
-                        lastModified: stats.mtime,
-                        lastModifiedFormatted: stats.mtime.toLocaleString('en-IN'),
-                        directory: path.relative(excelDir, path.dirname(fullPath)) || 'Root'
-                    };
-                }
-            }
-            return null;
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        const fileInfo = findFile(excelDir, filename);
-
-        if (!fileInfo) {
-            return res.status(404).json({
-                success: false,
-                message: `Excel file '${filename}' not found`
-            });
-        }
-
-        // Try to get Excel sheet information
-        try {
-            const ExcelJS = require('exceljs');
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.readFile(fileInfo.fullPath);
-
-            const sheets = workbook.worksheets.map(sheet => ({
-                name: sheet.name,
-                rowCount: sheet.rowCount,
-                columnCount: sheet.columnCount,
-                hasData: sheet.rowCount > 0
-            }));
-
-            fileInfo.sheets = sheets;
-            fileInfo.totalSheets = sheets.length;
-
-        } catch (excelError) {
-            console.warn(`Could not read Excel file details: ${excelError.message}`);
-            fileInfo.sheets = [];
-            fileInfo.totalSheets = 0;
-            fileInfo.excelError = excelError.message;
-        }
-
-        res.json({
-            success: true,
-            message: `File details for ${filename}`,
-            data: fileInfo
-        });
-
-    } catch (error) {
-        console.error('Error getting file details:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Failed to get file details'
-        });
-    }
-});
-
-// Create file processing tracking table if it doesn't exist
-function initializeFileTrackingTable() {
-    const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS file_processing_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT NOT NULL,
-            file_path TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'pending',
-            records_processed INTEGER DEFAULT 0,
-            processing_date DATETIME,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            error_message TEXT,
-            file_size INTEGER,
-            UNIQUE(filename, file_path)
-        )
-    `;
-
-    globalDb.run(createTableQuery, (err) => {
-        if (err) {
-            console.error('Error creating file_processing_log table:', err);
-        } else {
-            console.log('File processing tracking table initialized');
-        }
-    });
-}
-
-// Initialize the tracking table
-initializeFileTrackingTable();
-
-// Get processing status for all files
-app.get('/api/excel-files/processing/status', async (req, res) => {
-    try {
-        const query = `
-            SELECT filename, file_path, status, records_processed, 
-                   processing_date, error_message, file_size
-            FROM file_processing_log 
-            ORDER BY updated_at DESC
-        `;
-
-        globalDb.all(query, [], (err, rows) => {
-            if (err) {
-                console.error('Error fetching processing status:', err);
-                return res.status(500).json({
-                    success: false,
-                    error: err.message
-                });
-            }
-
-            // Create a map for quick lookup
-            const statusMap = {};
-            rows.forEach(row => {
-                const key = `${row.filename}|${row.file_path}`;
-                statusMap[key] = {
-                    status: row.status,
-                    recordsProcessed: row.records_processed,
-                    processingDate: row.processing_date,
-                    errorMessage: row.error_message,
-                    fileSize: row.file_size
-                };
-            });
-
-            res.json({
-                success: true,
-                message: `Found processing status for ${rows.length} files`,
-                data: statusMap
-            });
-        });
-
-    } catch (error) {
-        console.error('Error getting processing status:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-// Mark a file as processed
-app.post('/api/excel-files/processing/mark', async (req, res) => {
-    try {
-        const { filename, filePath, status, recordsProcessed, errorMessage } = req.body;
-
-        if (!filename || !filePath || !status) {
-            return res.status(400).json({
-                success: false,
-                message: 'filename, filePath, and status are required'
-            });
-        }
-
-        const query = `
-            INSERT OR REPLACE INTO file_processing_log 
-            (filename, file_path, status, records_processed, processing_date, error_message, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, CURRENT_TIMESTAMP)
-        `;
-
-        globalDb.run(query, [filename, filePath, status, recordsProcessed || 0, errorMessage || null], function (err) {
-            if (err) {
-                console.error('Error updating processing status:', err);
-                return res.status(500).json({
-                    success: false,
-                    error: err.message
-                });
-            }
-
-            res.json({
-                success: true,
-                message: `Processing status updated for ${filename}`,
-                data: {
-                    id: this.lastID,
-                    filename,
-                    filePath,
-                    status,
-                    recordsProcessed: recordsProcessed || 0
-                }
-            });
-        });
-
-    } catch (error) {
-        console.error('Error marking file as processed:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        // Create date-based folder
-        const today = new Date();
-        const dateFolder = `${today.getDate().toString().padStart(2, '0')}${today.toLocaleString('en-US', { month: 'short' })}`;
-        const uploadPath = path.join(__dirname, 'Excel Files', dateFolder);
-
-        // Create directory if it doesn't exist
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-            console.log(`📁 Created upload directory: ${uploadPath}`);
-        }
-
-        cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-        // Keep original filename
-        cb(null, file.originalname);
-    }
-});
-
-// File filter to only allow Excel files
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.mimetype === 'application/vnd.ms-excel' ||
-        file.originalname.endsWith('.xlsx') ||
-        file.originalname.endsWith('.xls')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only Excel files (.xlsx, .xls) are allowed!'), false);
-    }
-};
-
-const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 100 * 1024 * 1024 // 100MB limit
-    }
-});
-
-// Upload Excel files endpoint
-app.post('/api/excel-files/upload', upload.array('excelFiles', 10), async (req, res) => {
-    try {
-        if (!req.files || req.files.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'No files uploaded'
-            });
-        }
-
-        const uploadedFiles = req.files.map(file => {
-            const today = new Date();
-            const dateFolder = `${today.getDate().toString().padStart(2, '0')}${today.toLocaleString('en-US', { month: 'short' })}`;
-
-            return {
-                originalName: file.originalname,
-                filename: file.filename,
-                size: file.size,
-                sizeFormatted: formatFileSize(file.size),
-                path: path.join(dateFolder, file.filename),
-                uploadDate: new Date().toISOString(),
-                uploadDateFormatted: new Date().toLocaleString('en-IN')
-            };
-        });
-
-        console.log(`📤 Uploaded ${req.files.length} Excel files:`);
-        uploadedFiles.forEach(file => {
-            console.log(`   📊 ${file.originalName} (${file.sizeFormatted})`);
-        });
-
-        res.json({
-            success: true,
-            message: `Successfully uploaded ${req.files.length} file(s)`,
-            data: {
-                files: uploadedFiles,
-                uploadCount: req.files.length,
-                totalSize: req.files.reduce((sum, file) => sum + file.size, 0),
-                totalSizeFormatted: formatFileSize(req.files.reduce((sum, file) => sum + file.size, 0))
-            }
-        });
-
-    } catch (error) {
-        console.error('Error uploading files:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Failed to upload files'
-        });
-    }
-});
-
-// Get available dates (directories) in Excel Files folder
-app.get('/api/excel-files/dates', async (req, res) => {
-    try {
-        const excelDir = path.join(__dirname, 'Excel Files');
-
-        if (!fs.existsSync(excelDir)) {
-            return res.json({
-                success: true,
-                message: 'No Excel Files directory found',
-                data: { dates: [] }
-            });
-        }
-
-        const items = fs.readdirSync(excelDir);
-        const dates = [];
-
-        // Add root directory files
-        const rootFiles = items.filter(item => {
-            const fullPath = path.join(excelDir, item);
-            return fs.statSync(fullPath).isFile() && (item.endsWith('.xlsx') || item.endsWith('.xls'));
-        });
-
-        if (rootFiles.length > 0) {
-            dates.push({
-                folder: 'Root',
-                displayName: 'Older Files (Root)',
-                fileCount: rootFiles.length,
-                isDirectory: false
-            });
-        }
-
-        // Add date directories
-        const directories = items.filter(item => {
-            const fullPath = path.join(excelDir, item);
-            return fs.statSync(fullPath).isDirectory();
-        }).sort().reverse(); // Most recent first
-
-        directories.forEach(dir => {
-            const dirPath = path.join(excelDir, dir);
-            const dirFiles = fs.readdirSync(dirPath).filter(file =>
-                file.endsWith('.xlsx') || file.endsWith('.xls')
-            );
-
-            if (dirFiles.length > 0) {
-                dates.push({
-                    folder: dir,
-                    displayName: `${dir} (${dirFiles.length} files)`,
-                    fileCount: dirFiles.length,
-                    isDirectory: true
-                });
-            }
-        });
-
-        res.json({
-            success: true,
-            message: `Found ${dates.length} date folders`,
-            data: { dates }
-        });
-
-    } catch (error) {
-        console.error('Error getting dates:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Failed to get available dates'
-        });
-    }
-});
-
-// Get Excel files by date
-app.get('/api/excel-files/by-date/:dateFolder', async (req, res) => {
-    try {
-        const { dateFolder } = req.params;
-        const excelDir = path.join(__dirname, 'Excel Files');
-
-        let targetDir;
-        if (dateFolder === 'Root') {
-            targetDir = excelDir;
-        } else {
-            targetDir = path.join(excelDir, dateFolder);
-        }
-
-        if (!fs.existsSync(targetDir)) {
-            return res.status(404).json({
-                success: false,
-                message: `Date folder '${dateFolder}' not found`
-            });
-        }
-
-        const files = [];
-        const items = fs.readdirSync(targetDir);
-
-        for (const item of items) {
-            const fullPath = path.join(targetDir, item);
-            const stats = fs.statSync(fullPath);
-
-            if (stats.isFile() && (item.endsWith('.xlsx') || item.endsWith('.xls'))) {
-                const filePath = dateFolder === 'Root' ? item : `${dateFolder}/${item}`;
-
-                files.push({
-                    name: item,
-                    path: filePath,
-                    fullPath: fullPath,
-                    size: stats.size,
-                    sizeFormatted: formatFileSize(stats.size),
-                    lastModified: stats.mtime,
-                    lastModifiedFormatted: stats.mtime.toLocaleString('en-IN'),
-                    directory: dateFolder,
-                    extension: path.extname(item)
-                });
-            }
-        }
-
-        // Sort by last modified (newest first)
-        files.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-
-        res.json({
-            success: true,
-            message: `Found ${files.length} Excel files in ${dateFolder}`,
-            data: {
-                files,
-                dateFolder,
-                fileCount: files.length,
-                totalSize: files.reduce((sum, file) => sum + file.size, 0),
-                totalSizeFormatted: formatFileSize(files.reduce((sum, file) => sum + file.size, 0))
-            }
-        });
-
-    } catch (error) {
-        console.error('Error getting files by date:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Failed to get files by date'
-        });
-    }
-});
-
-
 // ============================================================================
 // TOP BANKS ANALYSIS API FOR CHOROPLETH
 // ============================================================================
@@ -8434,11 +6326,11 @@ app.get('/api/choropleth/top-banks-analysis', async (req, res) => {
         // Get top banks from bank_pensioner_data
         let topBanksQuery = `
             select Bank_name, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
-(count(LC_date)/count(*))*100 as completion_ratio
+(count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
 from all_pensioners where bank_name is Not null and bank_name != 'null' GROUP by bank_name order by completion_ratio desc limit 5
         `;
 
-            const topBanks = await new Promise((resolve, reject) => {
+        const topBanks = await new Promise((resolve, reject) => {
             db.all(topBanksQuery, (err, rows) => {
                 if (err) {
                     reject(err);
@@ -8468,5 +6360,110 @@ from all_pensioners where bank_name is Not null and bank_name != 'null' GROUP by
 const pincodeApiRouter = require('./pincode-api');
 const { cache } = require('react');
 app.use('/api/pincode', pincodeApiRouter);
+
+// Helper: Get top pensioner types
+async function getTopPSA(limit, pensionerType) {
+    return new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+
+        const topLimit = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Number(limit) : 5;
+
+        const params = [];
+        let query = `
+            select pensioner_type as psa,
+count(*) as all_pensioner_count, 
+COUNT(LC_date) AS verified_pensioner_count,
+ROUND(
+                COUNT(LC_date) * 100.0 / COUNT(*),
+                2
+              ) AS completion_ratio
+from all_pensioners group by pensioner_type
+order by completion_ratio desc
+        `;
+
+        db.all(query, params, (err, rows) => {
+            db.close();
+            if (err) {
+                reject(err);
+            } else {
+                resolve(rows || []);
+            }
+        });
+    });
+}
+
+// Helper: Count distinct central PSA subtype counts
+async function getPensionerSubtypeCounts() {
+    return new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+
+        const query = `
+                            SELECT
+                        pensioner_subtype,COUNT(*) AS all_pensioner_count,
+                        COUNT(LC_date) AS verified_pensioner_count,
+                        (COUNT(LC_date) * 100.0 / COUNT(*)) AS completion_ratio
+                    FROM
+                        all_pensioners
+                    WHERE
+                        pensioner_type = 'CENTRAL'
+                    GROUP BY
+                        pensioner_subtype
+                    ORDER BY
+                        completion_ratio DESC;
+                    `;
+
+        db.all(query, [], (err, rows) => {
+            db.close();
+            if (err) {
+                reject(err);
+            } else {
+                resolve(rows || []);
+            }
+        });
+    });
+}
+
+// Top PSA Categories API endpoint
+app.get('/api/top-psa', async (req, res) => {
+    try {
+        const { limit, pensioner_type } = req.query;
+        const topPSA = await getTopPSA(limit, pensioner_type);
+
+        res.status(200).json({
+            success: true,
+            data: topPSA,
+            totalPSA: topPSA.length,
+            filters: {
+                pensioner_type: pensioner_type || null
+            },
+            dataSources: ['all_pensioners']
+        });
+    } catch (error) {
+        console.error('Error in /api/top-psa:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch top PSA data'
+        });
+    }
+});
+
+// PSA counts per Pensioner_type
+app.get('/api/psa-pensioner-types', async (req, res) => {
+    try {
+        const data = await getPensionerSubtypeCounts();
+        res.status(200).json({
+            success: true,
+            data,
+            totalTypes: data.length,
+            dataSources: ['all_pensioners']
+        });
+    } catch (error) {
+        console.error('Error in /api/psa-pensioner-types:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch pensioner type completion stats'
+        });
+    }
+});
 
 // Server already started above - no need for duplicate listen call

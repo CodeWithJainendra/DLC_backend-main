@@ -829,27 +829,6 @@ app.get('//health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Dashboard statistics endpoint (protected)
-app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
-    try {
-        const stats = await getDashboardStats();
-        res.status(200).json({
-            totalPensioners: stats.totalPensioners,
-            summary: {
-                total: stats.summary.total,
-                verified: stats.summary.verified,
-                pending: stats.summary.pending,
-                verificationRate: stats.summary.verificationRate
-            },
-            ageDistribution: stats.ageDistribution
-        });
-    } catch (error) {
-        console.error('Error in /api/dashboard/stats:', error);
-        res.status(500).json({
-            error: 'Failed to fetch dashboard statistics'
-        });
-    }
-});
 
 // Public dashboard statistics endpoint (for testing)
 app.get('/api/dashboard/public-stats', async (req, res) => {
@@ -919,25 +898,130 @@ app.get('/api/dashboard/top-states', async (req, res) => {
     }
 });
 
-// Public endpoint for top states (no authentication required)
-app.get('/api/dashboard/public-top-states', async (req, res) => {
+// New endpoint: detailed-top-states using exact SQL query
+app.get('/api/dashboard/detailed-top-states', async (req, res) => {
+    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+
+    const closeDb = () => {
+        db.close(err => {
+            if (err) {
+                console.warn('Warning: failed to close database connection', err.message);
+            }
+        });
+    };
+
     try {
-        const { limit } = req.query;
-        const topStates = await getTopStatesByVerifiedPensioners(limit);
-        res.status(200).json({
-            success: true,
-            topStates: topStates,
-            totalStates: topStates.length,
-            dataSources: ['all_pensioners']
+        const query = `
+            SELECT 
+                TRIM(State) AS State, 
+                COUNT(*) AS all_pensioner_count, 
+                COUNT(NULLIF(TRIM(LC_date), '')) AS verified_pensioner_count, 
+                (COUNT(NULLIF(TRIM(LC_date), '')) * 100.0 / COUNT(*)) AS completion_ratio 
+            FROM 
+                all_pensioners 
+            WHERE 
+                State IS NOT NULL 
+                AND LOWER(TRIM(State)) != 'null' 
+            GROUP BY 
+                TRIM(State) 
+            ORDER BY 
+                completion_ratio DESC
+        `;
+
+        db.all(query, [], (err, rows) => {
+            if (err) {
+                console.error('Error executing detailed-top-states query:', err.message);
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to fetch detailed top states data'
+                });
+            } else {
+                res.status(200).json({
+                    success: true,
+                    states: rows.map(r => ({
+                        state: r.State,
+                        all_pensioner_count: r.all_pensioner_count,
+                        verified_pensioner_count: r.verified_pensioner_count,
+                        completion_ratio: parseFloat(r.completion_ratio)
+                    })),
+                    totalStates: rows.length,
+                    dataSources: ['all_pensioners']
+                });
+            }
+            closeDb();
         });
     } catch (error) {
-        console.error('Error in /api/dashboard/public-top-states:', error);
+        console.error('Error in /api/dashboard/detailed-top-states:', error);
+        closeDb();
         res.status(500).json({
             success: false,
-            error: 'Failed to fetch top states data'
+            error: 'Internal server error'
         });
     }
 });
+
+// New endpoint: detailed-top-banks using exact SQL query
+app.get('/api/dashboard/detailed-top-banks', async (req, res) => {
+    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+
+    const closeDb = () => {
+        db.close(err => {
+            if (err) {
+                console.warn('Warning: failed to close database connection', err.message);
+            }
+        });
+    };
+
+    try {
+        const query = `
+            SELECT 
+                TRIM(bank_name) AS bank_name, 
+                COUNT(*) AS all_pensioner_count, 
+                COUNT(NULLIF(TRIM(LC_date), '')) AS verified_pensioner_count, 
+                (COUNT(NULLIF(TRIM(LC_date), '')) * 100.0 / COUNT(*)) AS completion_ratio 
+            FROM 
+                all_pensioners 
+            WHERE 
+                bank_name IS NOT NULL 
+                AND LOWER(TRIM(bank_name)) != 'null' 
+            GROUP BY 
+                TRIM(bank_name) 
+            ORDER BY 
+                completion_ratio DESC
+        `;
+
+        db.all(query, [], (err, rows) => {
+            if (err) {
+                console.error('Error executing detailed-top-banks query:', err.message);
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to fetch detailed top banks data'
+                });
+            } else {
+                res.status(200).json({
+                    success: true,
+                    banks: rows.map(r => ({
+                        bank_name: r.bank_name,
+                        all_pensioner_count: r.all_pensioner_count,
+                        verified_pensioner_count: r.verified_pensioner_count,
+                        completion_ratio: parseFloat(r.completion_ratio)
+                    })),
+                    totalBanks: rows.length,
+                    dataSources: ['all_pensioners']
+                });
+            }
+            closeDb();
+        });
+    } catch (error) {
+        console.error('Error in /api/dashboard/detailed-top-banks:', error);
+        closeDb();
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+
 
 // Authentication Methods Analysis Function
 async function getAuthenticationMethodsAnalysis() {

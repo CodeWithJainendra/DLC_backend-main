@@ -886,7 +886,7 @@ app.get('/api/top-states', async (req, res) => {
         const topStates = await getTopStates(limit);
         res.status(200).json({
             success: true,
-            topStates: topStates,
+            data: topStates,
             totalStates: topStates.length,
             dataSources: ['all_pensioners']
         });

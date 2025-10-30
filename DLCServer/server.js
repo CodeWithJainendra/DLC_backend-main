@@ -515,7 +515,6 @@ async function getDashboardStats() {
         };
 
         try {
-            // Get submission mode breakdown from doppw_pensioner_data
             submissionTypeQuery = `
                 SELECT pensioner_DLC_type as submission_mode
                     COUNT(*) as count
@@ -611,13 +610,14 @@ async function getTopStatesByVerifiedPensioners(limit) {
     try {
         // Use only all_pensioners for both totals and verified (LC_date)
 
-        const query = `select State, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
+        let query = `select State, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
 (count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
-from all_pensioners where state is Not null and State != 'null' GROUP by state order by completion_ratio desc limit 5`;
+from all_pensioners where state is Not null and State != 'null' GROUP by state order by completion_ratio desc`;
+        query = _addLimitClauseIfNeeded(query, limit)
 
-        console.log(query)
         const rows = await new Promise((resolve, reject) => {
-            db.all(query, [], (err, rows) => {
+
+            db.all(query, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -633,9 +633,9 @@ from all_pensioners where state is Not null and State != 'null' GROUP by state o
             console.log(r)
             merged.push({
                 state: r.state,
-                total_pensioners: r.all_pensioner_count,
-                verified_count: r.verified_pensioner_count,
-                verification_rate: r.all_pensioner_count > 0 ? Number(((r.verified_pensioner_count * 100.0) / r.all_pensioner_count).toFixed(2)) : 0
+                all_pensioner_count: r.all_pensioner_count,
+                verified_pensioner_count: r.verified_pensioner_count,
+                completion_ratio: r.all_pensioner_count > 0 ? Number(((r.verified_pensioner_count * 100.0) / r.all_pensioner_count).toFixed(2)) : 0
 
             });
         });
@@ -878,10 +878,9 @@ app.options('/api/dashboard/stats', (req, res) => {
     res.sendStatus(200);
 });
 
-// Endpoint to get top states by total pensioners (comprehensive data from all tables)
 app.get('/api/dashboard/top-states', async (req, res) => {
     try {
-        const { limit } = req.query;
+        const limit = req.query.limit
         const topStates = await getTopStatesByVerifiedPensioners(limit);
         res.status(200).json({
             success: true,
@@ -990,6 +989,7 @@ app.get('/api/dashboard/detailed-top-banks', async (req, res) => {
                 completion_ratio DESC
         `;
 
+        query = _addLimitClauseIfNeeded(query, req.query.limit)
         db.all(query, [], (err, rows) => {
             if (err) {
                 console.error('Error executing detailed-top-banks query:', err.message);
@@ -6443,29 +6443,36 @@ from all_pensioners where bank_name is Not null and bank_name != 'null' GROUP by
 // Import pincode API routes
 const pincodeApiRouter = require('./pincode-api');
 const { cache } = require('react');
+const { isNullOrUndefined } = require('util');
 app.use('/api/pincode', pincodeApiRouter);
 
+const _addLimitClauseIfNeeded = (query, limit) => {
+    query = query.trim();
+    if (limit && !query.toLowerCase().includes('limit')) {
+        query += ` LIMIT ` + limit;
+    }
+    return query;
+};
+
 // Helper: Get top pensioner types
-async function getTopPSA(limit, pensionerType) {
+async function getTopPSA(limit) {
+    let query = `
+            select pensioner_type as psa,
+                    count(*) as all_pensioner_count, 
+                    COUNT(LC_date) AS verified_pensioner_count,
+                    ROUND(
+                                    COUNT(LC_date) * 100.0 / COUNT(*),
+                                    2
+                                ) AS completion_ratio
+                    from all_pensioners group by pensioner_type
+                    order by completion_ratio desc`;
+
+    query = _addLimitClauseIfNeeded(query, limit);
     return new Promise((resolve, reject) => {
+
         const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
-        const topLimit = Number.isFinite(Number(limit)) && Number(limit) > 0 ? Number(limit) : 5;
-
-        const params = [];
-        let query = `
-            select pensioner_type as psa,
-count(*) as all_pensioner_count, 
-COUNT(LC_date) AS verified_pensioner_count,
-ROUND(
-                COUNT(LC_date) * 100.0 / COUNT(*),
-                2
-              ) AS completion_ratio
-from all_pensioners group by pensioner_type
-order by completion_ratio desc
-        `;
-
-        db.all(query, params, (err, rows) => {
+        db.all(query, (err, rows) => {
             db.close();
             if (err) {
                 reject(err);
@@ -6510,15 +6517,15 @@ async function getPensionerSubtypeCounts() {
 // Top PSA Categories API endpoint
 app.get('/api/top-psa', async (req, res) => {
     try {
-        const { limit, pensioner_type } = req.query;
-        const topPSA = await getTopPSA(limit, pensioner_type);
+        const limit = req.query.limit || null;
+        const topPSA = await getTopPSA(limit);
+
 
         res.status(200).json({
             success: true,
             data: topPSA,
             totalPSA: topPSA.length,
             filters: {
-                pensioner_type: pensioner_type || null
             },
             dataSources: ['all_pensioners']
         });

@@ -61,7 +61,7 @@ app.use((req, res, next) => {
     }
 
     // Strip reverse proxy base path if present
-    // e.g., /dlc-pension-data-api/api/psa-pensioner-types -> /api/psa-pensioner-types
+    // e.g., /dlc-pension-data-api/api/central-pensioner-subtypes -> /api/central-pensioner-subtypes
     req.url = req.url.replace(/^\/dlc-pension-data-api(\/|$)/, '/');
     req.originalUrl = (req.originalUrl || '').replace(/^\/dlc-pension-data-api(\/|$)/, '/');
 
@@ -523,7 +523,7 @@ async function getDashboardStats() {
                 GROUP BY pensioner_DLC_type
             `
             const submissionRow = await dbGet(db, submissionTypeQuery);
-            console.log(submissionTypeQuery)
+            // console.log(submissionTypeQuery)
             // If single row returned, handle it differently
             if (submissionRow) {
                 // Single row case - need to get all modes
@@ -596,7 +596,7 @@ async function getDashboardStats() {
 }
 
 
-async function getTopStatesByVerifiedPensioners(limit) {
+async function getTopStates(limit) {
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
     const closeDb = () => {
@@ -610,9 +610,13 @@ async function getTopStatesByVerifiedPensioners(limit) {
     try {
         // Use only all_pensioners for both totals and verified (LC_date)
 
-        let query = `select State, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
-(count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
-from all_pensioners where state is Not null and State != 'null' GROUP by state order by completion_ratio desc`;
+        let query = `select State, 
+        count(*) as all_pensioner_count, 
+        count(LC_date) as verified_pensioner_count, 
+        (count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
+        from all_pensioners 
+        where state is Not null and State != 'null' 
+        GROUP by state order by completion_ratio desc, all_pensioner_count desc`;
         query = _addLimitClauseIfNeeded(query, limit)
 
         const rows = await new Promise((resolve, reject) => {
@@ -627,10 +631,8 @@ from all_pensioners where state is Not null and State != 'null' GROUP by state o
         });
 
         merged = []
-        console.log(rows.length)
 
         rows.forEach(r => {
-            console.log(r)
             merged.push({
                 state: r.state,
                 all_pensioner_count: r.all_pensioner_count,
@@ -878,10 +880,10 @@ app.options('/api/dashboard/stats', (req, res) => {
     res.sendStatus(200);
 });
 
-app.get('/api/dashboard/top-states', async (req, res) => {
+app.get('/api/top-states', async (req, res) => {
     try {
         const limit = req.query.limit
-        const topStates = await getTopStatesByVerifiedPensioners(limit);
+        const topStates = await getTopStates(limit);
         res.status(200).json({
             success: true,
             topStates: topStates,
@@ -889,7 +891,7 @@ app.get('/api/dashboard/top-states', async (req, res) => {
             dataSources: ['all_pensioners']
         });
     } catch (error) {
-        console.error('Error in /api/dashboard/top-states:', error);
+        console.error('Error in /api/top-states:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to fetch top states data'
@@ -924,7 +926,7 @@ app.get('/api/dashboard/detailed-top-states', async (req, res) => {
             GROUP BY 
                 TRIM(State) 
             ORDER BY 
-                completion_ratio DESC
+                completion_ratio DESC, all_pensioner_count DESC
         `;
 
         db.all(query, [], (err, rows) => {
@@ -972,7 +974,7 @@ app.get('/api/dashboard/detailed-top-banks', async (req, res) => {
     };
 
     try {
-        const query = `
+        let query = `
             SELECT 
                 TRIM(bank_name) AS bank_name, 
                 COUNT(*) AS all_pensioner_count, 
@@ -986,7 +988,7 @@ app.get('/api/dashboard/detailed-top-banks', async (req, res) => {
             GROUP BY 
                 TRIM(bank_name) 
             ORDER BY 
-                completion_ratio DESC
+                completion_ratio DESC, all_pensioner_count DESC
         `;
 
         query = _addLimitClauseIfNeeded(query, req.query.limit)
@@ -2148,8 +2150,8 @@ app.get('/api/dashboard/filtered-stats', async (req, res) => {
         baseQuery += " GROUP BY pensioner_state ORDER BY total DESC";
 
         // Log the final query for debugging
-        console.log('Executing query:', baseQuery);
-        console.log('With parameters:', params);
+        // console.log('Executing query:', baseQuery);
+        // console.log('With parameters:', params);
 
         // Execute query
         const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
@@ -2326,8 +2328,8 @@ app.get('/api/pensioners/comprehensive-filtered-stats', async (req, res) => {
             mainQuery += ` GROUP BY ${groupByFields.join(', ')}`;
             mainQuery += ` ORDER BY total DESC`;
 
-            console.log('Executing query:', mainQuery);
-            console.log('With parameters:', mainParams);
+            // console.log('Executing query:', mainQuery);
+            // console.log('With parameters:', mainParams);
 
             // Execute main query
             const mainResults = await new Promise((resolve, reject) => {
@@ -5224,10 +5226,15 @@ app.get('/api/bank-analysis', async (req, res) => {
 app.get('/api/top-banks', async (req, res) => {
     const { limit = 10 } = req.query;
 
-    const top_banks_query = `select Bank_name, count(*) as all_pensioner_count, count(LC_date) as verified_pensioner_count, 
-(count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
-from all_pensioners where bank_name is not null GROUP by bank_name order by completion_ratio desc limit 5`;
+    let query = `select Bank_name, 
+    count(*) as all_pensioner_count, 
+    count(LC_date) as verified_pensioner_count, 
+    (count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
+    from all_pensioners where bank_name is not null 
+    GROUP by bank_name 
+    order by completion_ratio desc, all_pensioner_count desc`;
 
+    query = _addLimitClauseIfNeeded(query, req.query.limit)
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
     const closeDb = () => {
@@ -5237,10 +5244,9 @@ from all_pensioners where bank_name is not null GROUP by bank_name order by comp
             }
         });
     };
-    console.log(top_banks_query)
     try {
         const rows = await new Promise((resolve, reject) => {
-            db.all(top_banks_query, (err, rows) => {
+            db.all(query, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -5258,7 +5264,7 @@ from all_pensioners where bank_name is not null GROUP by bank_name order by comp
         console.error('Database error:', error);
         res.status(500).json({
             success: false,
-            error: 'Database query failed',
+            error: 'Database query failed:', query,
             details: error.message
         });
     } finally {
@@ -6465,7 +6471,7 @@ async function getTopPSA(limit) {
                                     2
                                 ) AS completion_ratio
                     from all_pensioners group by pensioner_type
-                    order by completion_ratio desc`;
+                    order by completion_ratio desc, all_pensioner_count desc`;
 
     query = _addLimitClauseIfNeeded(query, limit);
     return new Promise((resolve, reject) => {
@@ -6484,12 +6490,12 @@ async function getTopPSA(limit) {
 }
 
 // Helper: Count distinct central PSA subtype counts
-async function getPensionerSubtypeCounts() {
+async function getTopCentralPensionerSubtypeCounts(limit) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
-        const query = `
-                            SELECT
+        let query = `
+                    SELECT
                         pensioner_subtype,COUNT(*) AS all_pensioner_count,
                         COUNT(LC_date) AS verified_pensioner_count,
                         (COUNT(LC_date) * 100.0 / COUNT(*)) AS completion_ratio
@@ -6500,9 +6506,10 @@ async function getPensionerSubtypeCounts() {
                     GROUP BY
                         pensioner_subtype
                     ORDER BY
-                        completion_ratio DESC;
+                        completion_ratio DESC, all_pensioner_count DESC;
                     `;
 
+        query = _addLimitClauseIfNeeded(query, limit);
         db.all(query, [], (err, rows) => {
             db.close();
             if (err) {
@@ -6515,7 +6522,7 @@ async function getPensionerSubtypeCounts() {
 }
 
 // Top PSA Categories API endpoint
-app.get('/api/top-psa', async (req, res) => {
+app.get('/api/top-psas', async (req, res) => {
     try {
         const limit = req.query.limit || null;
         const topPSA = await getTopPSA(limit);
@@ -6530,7 +6537,7 @@ app.get('/api/top-psa', async (req, res) => {
             dataSources: ['all_pensioners']
         });
     } catch (error) {
-        console.error('Error in /api/top-psa:', error);
+        console.error('Error in /api/top-psas:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to fetch top PSA data'
@@ -6538,10 +6545,10 @@ app.get('/api/top-psa', async (req, res) => {
     }
 });
 
-// PSA counts per Pensioner_type
-app.get('/api/psa-pensioner-types', async (req, res) => {
+app.get('/api/top-central-pensioner-subtypes', async (req, res) => {
     try {
-        const data = await getPensionerSubtypeCounts();
+        const limit = req.query.limit
+        const data = await getTopCentralPensionerSubtypeCounts(limit);
         res.status(200).json({
             success: true,
             data,
@@ -6549,10 +6556,10 @@ app.get('/api/psa-pensioner-types', async (req, res) => {
             dataSources: ['all_pensioners']
         });
     } catch (error) {
-        console.error('Error in /api/psa-pensioner-types:', error);
+        console.error('Error in /api/top-central-pensioner-subtypes:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to fetch pensioner type completion stats'
+            error: 'Failed to fetch top central pensioner subtype completion stats'
         });
     }
 });

@@ -358,7 +358,7 @@ function prepareOutgoingRequest(payload) {
 }
 
 function dbGetMany(db, sqlQueries, params = null) {
-    if (params === null){
+    if (params === null) {
         params = [...Array(sqlQueries.length).fill([])];
     }
     if (sqlQueries.length !== params.length) {
@@ -388,29 +388,138 @@ function dbGet(db, sql, params = []) {
     });
 }
 
-async function getDashboardStats() {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-        
-    const summaryStats = {
-            total_pensioners: null,
-            dlc_done: null,
-            dlc_pending: null,
-            dlc_percentage: null,
-            dlc_done_yesterday: null,
-            data_accuracy: null
-        }
+function buildWhereClause(filters) {
+    console.log("Building where clause:", filters)
+    const whereParts = [];
+    const params = [];
 
-        // Comprehensive age distribution from all tables
-        const ageStats = {
-            '<60 Years': { total: null, dlc_done: null },
-            '60-70 Years': { total: null, dlc_done: null },
-            '70-80 Years': { total: null, dlc_done: null },
-            '80-90 Years': { total: null, dlc_done: null },
-            '90+ Years': { total: null, dlc_done: null }
-        };
- 
-        const currentYear = new Date().getFullYear();
-        const _ageWiseBreakdownQuery = `
+    // 1️⃣ Banks
+    if (filters.banks && Array.isArray(filters.banks) && filters.banks.length > 0) {
+        console.log("Found banks in filters", filters.banks);
+        whereParts.push(`bank_name IN (${filters.banks.map(() => '?').join(',')})`);
+        params.push(...filters.banks);
+    }
+
+    // 2️⃣ State / District / Pincode
+    if (filters.state) {
+        console.log("Found state in filters", filters.state);
+        whereParts.push(`state = ?`);
+        params.push(filters.state);
+    }
+    if (filters.district) {
+        console.log("Found district in filters", filters.district)
+        whereParts.push(`district = ?`);
+        params.push(filters.district);
+    }
+    if (filters.pincode) {
+        console.log("Found pincode in filters", filters.pincode)
+        whereParts.push(`pincode = ?`);
+        params.push(filters.pincode);
+    }
+
+    // 3️⃣ Pensioner types and subtypes (use both as a filter, to have right pairs: state autonomous and central autonomous, for example.)
+    if (filters.pensioner_types) {
+        const pensioner_where_clauses = [];
+        const pensioner_params = [];
+        console.log("Found pensioner_types in filters", JSON.stringify(filters.pensioner_types));
+        Object.keys(filters.pensioner_types).forEach(pensioner_type => {
+            const pensioner_subtypes = filters.pensioner_types[pensioner_type];
+            if (pensioner_subtypes && pensioner_subtypes.length > 0) {
+                const pensioner_type_clause = (`pensioner_type = ? `);
+                const pensioner_subtypes_clause = (`pensioner_subtype IN (${pensioner_subtypes.map(() => '?').join(',')})`);
+                pensioner_params.push(pensioner_type);
+                pensioner_subtypes.forEach(subtype => {
+                    pensioner_params.push(subtype);
+                });
+                const where_clause = `(${pensioner_type_clause} AND ${pensioner_subtypes_clause})`;
+                pensioner_where_clauses.push(where_clause);
+            }
+        });
+        if (pensioner_where_clauses.length > 0) {
+            const or_joined_pensioner_type_filters = `(${pensioner_where_clauses.join(' OR ')})`;
+            console.log("Final pensioner type where clause:", or_joined_pensioner_type_filters);
+            console.log("Final pensioner type params:", pensioner_params);
+            whereParts.push(or_joined_pensioner_type_filters);
+            params.push(...pensioner_params);
+        }
+    }
+
+    // 4️⃣ Age groups (translate each group into a YOB range condition)
+    const currentYear = new Date().getFullYear();
+    if (filters.age_groups && Array.isArray(filters.age_groups) && filters.age_groups.length > 0) {
+        console.log("Found age groups in filters", filters.age_groups);
+        const ageConditions = [];
+
+        filters.age_groups.forEach((group) => {
+            switch (group) {
+                case "Below 60":
+                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) < 60`);
+                    break;
+                case "60–70":
+                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69`);
+                    break;
+                case "70–80":
+                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) BETWEEN 70 AND 79`);
+                    break;
+                case "80–90":
+                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) BETWEEN 80 AND 89`);
+                    break;
+                case "Above 90":
+                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) >= 90`);
+                    break;
+            }
+        });
+
+        if (ageConditions.length > 0) {
+            whereParts.push(`(${ageConditions.join(' OR ')})`);
+        }
+    }
+
+    // 5️⃣ Data status
+    if (filters.data_status && filters.data_status !== "All") {
+        console.log("Found data status in filters", JSON.stringify(filters.data_status));
+        if (filters.data_status === "Completed") {
+            whereParts.push(`LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != ''`);
+        } else if (filters.data_status === "Pending") {
+            whereParts.push(`LC_date IS NULL OR LTRIM(RTRIM(LC_date)) = ''`);
+        } else if (filters.data_status === "Last year manual") {
+            whereParts.push(`data_source = 'Manual'`); // Example condition
+        }
+    }
+
+    const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
+    console.log("--------------------------------------")
+    console.log("Filters: ", JSON.stringify(filters))
+    console.log("Where clause: ", whereClause)
+    console.log("--------------------------------------")
+    return { whereClause, params };
+}
+
+
+
+async function getDashboardStats(filters) {
+    console.log("Getting dashboard stats with filters:", filters)
+    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    const summaryStats = {
+        total_pensioners: null,
+        dlc_done: null,
+        dlc_pending: null,
+        dlc_percentage: null,
+        dlc_done_yesterday: null,
+        data_accuracy: null
+    }
+
+    // Comprehensive age distribution from all tables
+    const ageStats = {
+        '<60 Years': { total: null, dlc_done: null },
+        '60-70 Years': { total: null, dlc_done: null },
+        '70-80 Years': { total: null, dlc_done: null },
+        '80-90 Years': { total: null, dlc_done: null },
+        '90+ Years': { total: null, dlc_done: null }
+    };
+
+    const currentYear = new Date().getFullYear();
+    const _ageWiseBreakdownQuery = `
             SELECT 
                 SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) < 60 THEN 1 ELSE 0 END) AS age_under_60,
                 SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS age_60_70,
@@ -422,14 +531,16 @@ async function getDashboardStats() {
                 AND CAST(YOB AS INTEGER) BETWEEN 1900 AND ${currentYear}
                 `;
 
-        const today = new Date();
-        const yesterdaydt = new Date(today); // Create a copy to avoid modifying 'today'
-        yesterdaydt.setDate(today.getDate() - 1);
-        const yesterday = yesterdaydt.toISOString().split('T')[0]
-        
-        const _summaryStatsQuery = ` 
+    const today = new Date();
+    const yesterdaydt = new Date(today); // Create a copy to avoid modifying 'today'
+    yesterdaydt.setDate(today.getDate() - 1);
+    const yesterday = yesterdaydt.toISOString().split('T')[0]
+
+    const { whereClause, params } = buildWhereClause(filters);
+
+    const _summaryStatsQuery = ` 
             WITH cte_all_pensioners_with_dlc_done_flag AS (
-                SELECT ID, PPO, LC_date, 
+                SELECT *, 
                     CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != '' THEN 1 ELSE 0 END AS DLC_DONE
                 FROM all_pensioners
             )
@@ -439,9 +550,9 @@ async function getDashboardStats() {
                 SUM(CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) = '${yesterday}' THEN 1 ELSE 0 END) AS dlc_done_yesterday,
                 COUNT(*) - SUM(dlc_done) AS dlc_pending,
                 dlc_done*1.0 / COUNT(*) * 100.0 AS dlc_completion_ratio
-            FROM  cte_all_pensioners_with_dlc_done_flag
-        `;
-    
+            FROM  cte_all_pensioners_with_dlc_done_flag ${whereClause}`;
+
+
     const closeDb = () => {
         db.close(err => {
             if (err) {
@@ -451,17 +562,17 @@ async function getDashboardStats() {
     };
 
     try {
-        // const ageWiseBreakdownRow = await dbGet(db, _ageWiseBreakdownQuery, []);
-        
-        const [statsRow, ageWiseBreakdownRow] = 
-                    await dbGetMany(db, [_summaryStatsQuery, _ageWiseBreakdownQuery], [[], []]);
-        
+        console.log(_summaryStatsQuery);
+        console.log(params);
+        const [statsRow, ageWiseBreakdownRow] =
+            await dbGetMany(db, [_summaryStatsQuery, _ageWiseBreakdownQuery], [params, []]);
+
         ageStats['<60 Years'] = ageWiseBreakdownRow?.age_under_60 || 0;
         ageStats['60-70 Years'] = ageWiseBreakdownRow?.age_60_70 || 0;
         ageStats['70-80 Years'] = ageWiseBreakdownRow?.age_70_80 || 0;
         ageStats['80-90 Years'] = ageWiseBreakdownRow?.age_80_90 || 0;
         ageStats['90+ Years'] = ageWiseBreakdownRow?.age_90_plus || 0;
-    
+
         summaryStats.total_pensioners = statsRow?.total_pensioners || 0;
         summaryStats.dlc_done = statsRow?.dlc_done || 0;
         summaryStats.dlc_pending = statsRow?.dlc_pending || 0;
@@ -469,14 +580,14 @@ async function getDashboardStats() {
         summaryStats.dlc_done_yesterday = statsRow?.dlc_done_yesterday || 0;
         summaryStats.data_accuracy = statsRow?.data_accuracy || "Coming soon";
 
-        return{
-            success:true, 
+        return {
+            success: true,
             summaryStats: summaryStats,
             ageStats: ageStats
         }
-    
-    } 
-    catch(err) {
+
+    }
+    catch (err) {
         console.log("Could not fetch dashboard statistics: ", err);
     }
     finally {
@@ -723,11 +834,10 @@ app.get('//health', (req, res) => {
 
 // Public dashboard statistics endpoint (for testing)
 app.post('/api/dashboard/public-stats', async (req, res) => {
-    console.log("In here");
     try {
         const data = req.body; // Access data from the request body
-        console.log(data);
-        const stats = await getDashboardStats();
+        console.log("Request with filters:", JSON.stringify(data.filters));
+        const stats = await getDashboardStats(data.filters);
         res.status(200).json({
             success: true,
             ...stats
@@ -1047,8 +1157,8 @@ async function getAdvancedCertificateAnalysis(filters = {}) {
         }
 
         // Age group filter
-        if (ageGroup && ageGroup !== 'All') {
-            if (ageGroup === '<60') {
+        if (ageGroup) {
+            if (ageGroup === 'Below 60') {
                 whereConditions.push("age < 60");
             } else if (ageGroup === '60-70') {
                 whereConditions.push("age >= 60 AND age <= 70");
@@ -1056,7 +1166,7 @@ async function getAdvancedCertificateAnalysis(filters = {}) {
                 whereConditions.push("age > 70 AND age <= 80");
             } else if (ageGroup === '80-90') {
                 whereConditions.push("age > 80 AND age <= 90");
-            } else if (ageGroup === '>90') {
+            } else if (ageGroup === 'Above 90') {
                 whereConditions.push("age > 90");
             }
         }
@@ -5093,7 +5203,7 @@ app.get('/api/bank-analysis', async (req, res) => {
 
 // Top Banks API - Get banks with highest verification counts
 app.post('/api/top-banks', async (req, res) => {
-    
+
     const limit = req.body.limit ? parseInt(req.body.limit) : null;
     const filters = req.body.filters;
 

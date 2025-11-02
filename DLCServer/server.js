@@ -388,32 +388,27 @@ function dbGet(db, sql, params = []) {
     });
 }
 
-function buildWhereClause(filters) {
-    console.log("Building where clause:", filters)
+function buildWhereClauseFromFilters(filters) {
     const whereParts = [];
     const params = [];
 
     // 1️⃣ Banks
     if (filters.banks && Array.isArray(filters.banks) && filters.banks.length > 0) {
-        console.log("Found banks in filters", filters.banks);
-        whereParts.push(`bank_name IN (${filters.banks.map(() => '?').join(',')})`);
-        params.push(...filters.banks);
+        whereParts.push(`lower(ltrim(rtrim(bank_name))) IN (${filters.banks.map(() => '?').join(',')})`);
+        params.push(...filters.banks.map(b => b.toLowerCase()));
     }
 
     // 2️⃣ State / District / Pincode
     if (filters.state) {
-        console.log("Found state in filters", filters.state);
-        whereParts.push(`state = ?`);
+        whereParts.push(`ltrim(rtrim(lower(state))) = ltrim(rtrim(lower(?)))`);
         params.push(filters.state);
     }
     if (filters.district) {
-        console.log("Found district in filters", filters.district)
-        whereParts.push(`district = ?`);
+        whereParts.push(`ltrim(rtrim(lower(district))) = ltrim(rtrim(lower(?)))`);
         params.push(filters.district);
     }
     if (filters.pincode) {
-        console.log("Found pincode in filters", filters.pincode)
-        whereParts.push(`pincode = ?`);
+        whereParts.push(`ltrim(rtrim(lower(pincode))) = ltrim(rtrim(lower(?)))`);
         params.push(filters.pincode);
     }
 
@@ -421,15 +416,14 @@ function buildWhereClause(filters) {
     if (filters.pensioner_types) {
         const pensioner_where_clauses = [];
         const pensioner_params = [];
-        console.log("Found pensioner_types in filters", JSON.stringify(filters.pensioner_types));
         Object.keys(filters.pensioner_types).forEach(pensioner_type => {
             const pensioner_subtypes = filters.pensioner_types[pensioner_type];
             if (pensioner_subtypes && pensioner_subtypes.length > 0) {
-                const pensioner_type_clause = (`pensioner_type = ? `);
-                const pensioner_subtypes_clause = (`pensioner_subtype IN (${pensioner_subtypes.map(() => '?').join(',')})`);
-                pensioner_params.push(pensioner_type);
+                const pensioner_type_clause = (`ltrim(rtrim(lower(pensioner_type))) = ? `);
+                const pensioner_subtypes_clause = (`ltrim(rtrim(lower(pensioner_subtype))) IN (${pensioner_subtypes.map(() => '?').join(',')})`);
+                pensioner_params.push(pensioner_type.toLowerCase());
                 pensioner_subtypes.forEach(subtype => {
-                    pensioner_params.push(subtype);
+                    pensioner_params.push(subtype.toLowerCase());
                 });
                 const where_clause = `(${pensioner_type_clause} AND ${pensioner_subtypes_clause})`;
                 pensioner_where_clauses.push(where_clause);
@@ -437,8 +431,6 @@ function buildWhereClause(filters) {
         });
         if (pensioner_where_clauses.length > 0) {
             const or_joined_pensioner_type_filters = `(${pensioner_where_clauses.join(' OR ')})`;
-            console.log("Final pensioner type where clause:", or_joined_pensioner_type_filters);
-            console.log("Final pensioner type params:", pensioner_params);
             whereParts.push(or_joined_pensioner_type_filters);
             params.push(...pensioner_params);
         }
@@ -447,25 +439,24 @@ function buildWhereClause(filters) {
     // 4️⃣ Age groups (translate each group into a YOB range condition)
     const currentYear = new Date().getFullYear();
     if (filters.age_groups && Array.isArray(filters.age_groups) && filters.age_groups.length > 0) {
-        console.log("Found age groups in filters", filters.age_groups);
         const ageConditions = [];
 
         filters.age_groups.forEach((group) => {
             switch (group) {
                 case "Below 60":
-                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) < 60`);
+                    ageConditions.push(`(${currentYear} - CAST(YOB AS INTEGER) < 60)`);
                     break;
                 case "60–70":
-                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69`);
+                    ageConditions.push(`(${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69)`);
                     break;
                 case "70–80":
-                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) BETWEEN 70 AND 79`);
+                    ageConditions.push(`(${currentYear} - CAST(YOB AS INTEGER) BETWEEN 70 AND 79)`);
                     break;
                 case "80–90":
-                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) BETWEEN 80 AND 89`);
+                    ageConditions.push(`(${currentYear} - CAST(YOB AS INTEGER) BETWEEN 80 AND 89)`);
                     break;
                 case "Above 90":
-                    ageConditions.push(`${currentYear} - CAST(YOB AS INTEGER) >= 90`);
+                    ageConditions.push(`(${currentYear} - CAST(YOB AS INTEGER) >= 90)`);
                     break;
             }
         });
@@ -477,28 +468,21 @@ function buildWhereClause(filters) {
 
     // 5️⃣ Data status
     if (filters.data_status && filters.data_status !== "All") {
-        console.log("Found data status in filters", JSON.stringify(filters.data_status));
         if (filters.data_status === "Completed") {
             whereParts.push(`LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != ''`);
         } else if (filters.data_status === "Pending") {
             whereParts.push(`LC_date IS NULL OR LTRIM(RTRIM(LC_date)) = ''`);
         } else if (filters.data_status === "Last year manual") {
-            whereParts.push(`data_source = 'Manual'`); // Example condition
+            whereParts.push(`lower(last_year_lc) = 'plc'`); // Example condition
         }
     }
 
     const whereClause = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
-    console.log("--------------------------------------")
-    console.log("Filters: ", JSON.stringify(filters))
-    console.log("Where clause: ", whereClause)
-    console.log("--------------------------------------")
     return { whereClause, params };
 }
 
 
-
 async function getDashboardStats(filters) {
-    console.log("Getting dashboard stats with filters:", filters)
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
     const summaryStats = {
         total_pensioners: null,
@@ -519,7 +503,7 @@ async function getDashboardStats(filters) {
     };
 
     const currentYear = new Date().getFullYear();
-    const _ageWiseBreakdownQuery = `
+    const _unfilteredAgeQuery = `
             SELECT 
                 SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) < 60 THEN 1 ELSE 0 END) AS age_under_60,
                 SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS age_60_70,
@@ -536,7 +520,10 @@ async function getDashboardStats(filters) {
     yesterdaydt.setDate(today.getDate() - 1);
     const yesterday = yesterdaydt.toISOString().split('T')[0]
 
-    const { whereClause, params } = buildWhereClause(filters);
+    const { whereClause, params } = buildWhereClauseFromFilters(filters);
+    const _ageWiseBreakdownQuery = (whereClause && whereClause.trim().length > 0) ?
+        `${_unfilteredAgeQuery} AND (${whereClause.replace('WHERE', '')})`
+        : _unfilteredAgeQuery;
 
     const _summaryStatsQuery = ` 
             WITH cte_all_pensioners_with_dlc_done_flag AS (
@@ -562,10 +549,8 @@ async function getDashboardStats(filters) {
     };
 
     try {
-        console.log(_summaryStatsQuery);
-        console.log(params);
         const [statsRow, ageWiseBreakdownRow] =
-            await dbGetMany(db, [_summaryStatsQuery, _ageWiseBreakdownQuery], [params, []]);
+            await dbGetMany(db, [_summaryStatsQuery, _ageWiseBreakdownQuery], [params, params]);
 
         ageStats['<60 Years'] = ageWiseBreakdownRow?.age_under_60 || 0;
         ageStats['60-70 Years'] = ageWiseBreakdownRow?.age_60_70 || 0;
@@ -610,13 +595,13 @@ async function getTopStates(limit) {
     try {
         // Use only all_pensioners for both totals and verified (LC_date)
 
-        let query = `select State, 
+        let query = `select lower(ltrim(rtrim(state))) as state, 
         count(*) as all_pensioner_count, 
-        count(LC_date) as verified_pensioner_count, 
-        (count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
+        SUM(CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != '' THEN 1 ELSE 0 END) AS verified_pensioner_count,
+        (SUM(CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != '' THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) * 100 AS completion_ratio
         from all_pensioners 
         where state is Not null and State != 'null' 
-        GROUP by state order by completion_ratio desc, all_pensioner_count desc`;
+        GROUP by lower(ltrim(rtrim(state))) order by completion_ratio desc, all_pensioner_count desc`;
         query = _addLimitClauseIfNeeded(query, limit)
 
         const rows = await new Promise((resolve, reject) => {
@@ -836,7 +821,6 @@ app.get('//health', (req, res) => {
 app.post('/api/dashboard/public-stats', async (req, res) => {
     try {
         const data = req.body; // Access data from the request body
-        console.log("Request with filters:", JSON.stringify(data.filters));
         const stats = await getDashboardStats(data.filters);
         res.status(200).json({
             success: true,
@@ -943,6 +927,9 @@ app.get('/api/dashboard/detailed-top-states', async (req, res) => {
 // New endpoint: detailed-top-banks using exact SQL query
 app.get('/api/dashboard/detailed-top-banks', async (req, res) => {
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+
+    const filters = req.query.filters || {};
+    console.log("Filters and limits for detailed-top-banks:", JSON.stringify(filters), limit);
 
     const closeDb = () => {
         db.close(err => {
@@ -5207,15 +5194,23 @@ app.post('/api/top-banks', async (req, res) => {
     const limit = req.body.limit ? parseInt(req.body.limit) : null;
     const filters = req.body.filters;
 
-    let query = `select Bank_name, 
+    const { whereClause, params } = buildWhereClauseFromFilters(filters);
+    const _limitClauseFromLimit = limit ? `LIMIT ${limit}` : '';
+
+
+    let query = `select ltrim(rtrim(lower(Bank_name))) as bank_name, 
     count(*) as all_pensioner_count, 
     count(LC_date) as verified_pensioner_count, 
     (count(LC_date) * 1.0 / count(*)) * 100 as completion_ratio
-    from all_pensioners where bank_name is not null 
-    GROUP by bank_name 
-    order by completion_ratio desc, all_pensioner_count desc`;
+    from all_pensioners where bank_name is not null ${whereClause ? whereClause.replace("WHERE", 'AND') : ''}
+    GROUP by bank_name
+    order by completion_ratio desc, all_pensioner_count desc
+    ${_limitClauseFromLimit}`;
 
-    query = _addLimitClauseIfNeeded(query, req.query.limit)
+
+    console.log('Constructed Top Banks query:', query);
+    console.log('Params:', params)
+
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
     const closeDb = () => {
@@ -5227,7 +5222,7 @@ app.post('/api/top-banks', async (req, res) => {
     };
     try {
         const rows = await new Promise((resolve, reject) => {
-            db.all(query, (err, rows) => {
+            db.all(query, params, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -6443,24 +6438,24 @@ const _addLimitClauseIfNeeded = (query, limit) => {
 };
 
 // Helper: Get top pensioner types
-async function getTopPSA(limit) {
+async function getTopPSA(filters, limit) {
+    const { whereClause, params } = buildWhereClauseFromFilters(filters);
     let query = `
-            select pensioner_type as psa,
+            select ltrim(rtrim(lower(pensioner_type))) as psa,
                     count(*) as all_pensioner_count, 
                     COUNT(LC_date) AS verified_pensioner_count,
-                    ROUND(
-                                    COUNT(LC_date) * 100.0 / COUNT(*),
-                                    2
-                                ) AS completion_ratio
-                    from all_pensioners group by pensioner_type
+                    ROUND(COUNT(LC_date) * 100.0 / COUNT(*), 2) AS completion_ratio
+                    from all_pensioners ${whereClause}
+                    group by ltrim(rtrim(lower(pensioner_type)))
                     order by completion_ratio desc, all_pensioner_count desc`;
 
     query = _addLimitClauseIfNeeded(query, limit);
+
     return new Promise((resolve, reject) => {
 
         const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
 
-        db.all(query, (err, rows) => {
+        db.all(query, params, (err, rows) => {
             db.close();
             if (err) {
                 reject(err);
@@ -6472,10 +6467,13 @@ async function getTopPSA(limit) {
 }
 
 // Helper: Count distinct central PSA subtype counts
-async function getTopCentralPensionerSubtypeCounts(limit) {
+async function getTopCentralPensionerSubtypeCounts(filters, limit) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
+        const { whereClause, params } = buildWhereClauseFromFilters(filters);
+        const whereClauseCorrected = (whereClause && whereClause.trim().length > 0)?
+                    whereClause.replace("WHERE", "AND") : "";
+        
         let query = `
                     SELECT
                         pensioner_subtype,COUNT(*) AS all_pensioner_count,
@@ -6484,15 +6482,16 @@ async function getTopCentralPensionerSubtypeCounts(limit) {
                     FROM
                         all_pensioners
                     WHERE
-                        pensioner_type = 'CENTRAL'
+                        ltrim(rtrim(lower(pensioner_type))) = lower('CENTRAL')
+                        ${whereClauseCorrected}
                     GROUP BY
                         pensioner_subtype
                     ORDER BY
-                        completion_ratio DESC, all_pensioner_count DESC;
+                        completion_ratio DESC, all_pensioner_count DESC
                     `;
 
         query = _addLimitClauseIfNeeded(query, limit);
-        db.all(query, [], (err, rows) => {
+        db.all(query, params, (err, rows) => {
             db.close();
             if (err) {
                 reject(err);
@@ -6508,7 +6507,7 @@ app.post('/api/top-psas', async (req, res) => {
     try {
         const limit = req.body.limit || null;
         const filters = req.body.filters || {};
-        const topPSA = await getTopPSA(limit);
+        const topPSA = await getTopPSA(filters, limit);
 
 
         res.status(200).json({
@@ -6531,7 +6530,8 @@ app.post('/api/top-psas', async (req, res) => {
 app.post('/api/top-central-pensioner-subtypes', async (req, res) => {
     try {
         const limit = req.body.limit;
-        const data = await getTopCentralPensionerSubtypeCounts(limit);
+        const filters = req.body.filters || {};
+        const data = await getTopCentralPensionerSubtypeCounts(filters, limit);
         res.status(200).json({
             success: true,
             data,

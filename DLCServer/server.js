@@ -13,7 +13,7 @@ const geographicRoutes = require('./routes/geographic-routes');
 
 const app = express();
 const PORT = process.env.PORT || 9007;
-const HOST = '0.0.0.0';
+const HOST = 'localhost';
 // const DB_PATH = path.join(__dirname, 'database.db');
 //TODO: changes
 const DB_PATH = path.join("..", 'updated_db/updated_db.db');
@@ -357,6 +357,26 @@ function prepareOutgoingRequest(payload) {
     }
 }
 
+function dbGetMany(db, sqlQueries, params = null) {
+    if (params === null){
+        params = [...Array(sqlQueries.length).fill([])];
+    }
+    if (sqlQueries.length !== params.length) {
+        throw new Error("Length of sql_queries and params must be the same");
+    }
+    const promiseList = sqlQueries.map((query, i) => {
+        return new Promise((resolve, reject) => {
+            db.get(query, params[i], (err, row) => {
+                if (err) return reject(err);
+                resolve(row);
+            });
+        });
+    });
+
+    return Promise.all(promiseList);
+}
+
+//TODO: to be eventually replaced with dbGetMany
 function dbGet(db, sql, params = []) {
     return new Promise((resolve, reject) => {
         db.get(sql, params, (err, row) => {
@@ -370,7 +390,58 @@ function dbGet(db, sql, params = []) {
 
 async function getDashboardStats() {
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+        
+    const summaryStats = {
+            total_pensioners: null,
+            dlc_done: null,
+            dlc_pending: null,
+            dlc_percentage: null,
+            dlc_done_yesterday: null,
+            data_accuracy: null
+        }
 
+        // Comprehensive age distribution from all tables
+        const ageStats = {
+            '<60 Years': { total: null, dlc_done: null },
+            '60-70 Years': { total: null, dlc_done: null },
+            '70-80 Years': { total: null, dlc_done: null },
+            '80-90 Years': { total: null, dlc_done: null },
+            '90+ Years': { total: null, dlc_done: null }
+        };
+ 
+        const currentYear = new Date().getFullYear();
+        const _ageWiseBreakdownQuery = `
+            SELECT 
+                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) < 60 THEN 1 ELSE 0 END) AS age_under_60,
+                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS age_60_70,
+                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 70 AND 79 THEN 1 ELSE 0 END) AS age_70_80,
+                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 80 AND 89 THEN 1 ELSE 0 END) AS age_80_90,
+                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) >= 90 THEN 1 ELSE 0 END) AS age_90_plus
+            FROM all_pensioners 
+            WHERE YOB IS NOT NULL 
+                AND CAST(YOB AS INTEGER) BETWEEN 1900 AND ${currentYear}
+                `;
+
+        const today = new Date();
+        const yesterdaydt = new Date(today); // Create a copy to avoid modifying 'today'
+        yesterdaydt.setDate(today.getDate() - 1);
+        const yesterday = yesterdaydt.toISOString().split('T')[0]
+        
+        const _summaryStatsQuery = ` 
+            WITH cte_all_pensioners_with_dlc_done_flag AS (
+                SELECT ID, PPO, LC_date, 
+                    CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != '' THEN 1 ELSE 0 END AS DLC_DONE
+                FROM all_pensioners
+            )
+            SELECT
+                COUNT(*) AS total_pensioners,
+                SUM(dlc_done) AS dlc_done,
+                SUM(CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) = '${yesterday}' THEN 1 ELSE 0 END) AS dlc_done_yesterday,
+                COUNT(*) - SUM(dlc_done) AS dlc_pending,
+                dlc_done*1.0 / COUNT(*) * 100.0 AS dlc_completion_ratio
+            FROM  cte_all_pensioners_with_dlc_done_flag
+        `;
+    
     const closeDb = () => {
         db.close(err => {
             if (err) {
@@ -380,217 +451,35 @@ async function getDashboardStats() {
     };
 
     try {
-        let totalPensioners = 0;
-        let verifiedToday = 0;
-        let pendingQueue = 0;
-        let totalVerified = 0;
+        // const ageWiseBreakdownRow = await dbGet(db, _ageWiseBreakdownQuery, []);
+        
+        const [statsRow, ageWiseBreakdownRow] = 
+                    await dbGetMany(db, [_summaryStatsQuery, _ageWiseBreakdownQuery], [[], []]);
+        
+        ageStats['<60 Years'] = ageWiseBreakdownRow?.age_under_60 || 0;
+        ageStats['60-70 Years'] = ageWiseBreakdownRow?.age_60_70 || 0;
+        ageStats['70-80 Years'] = ageWiseBreakdownRow?.age_70_80 || 0;
+        ageStats['80-90 Years'] = ageWiseBreakdownRow?.age_80_90 || 0;
+        ageStats['90+ Years'] = ageWiseBreakdownRow?.age_90_plus || 0;
+    
+        summaryStats.total_pensioners = statsRow?.total_pensioners || 0;
+        summaryStats.dlc_done = statsRow?.dlc_done || 0;
+        summaryStats.dlc_pending = statsRow?.dlc_pending || 0;
+        summaryStats.dlc_completion_ratio = statsRow?.dlc_completion_ratio || 0;
+        summaryStats.dlc_done_yesterday = statsRow?.dlc_done_yesterday || 0;
+        summaryStats.data_accuracy = statsRow?.data_accuracy || "Coming soon";
 
-        // Comprehensive age distribution from all tables
-        const ageDistribution = {
-            '<60 Years': 0,
-            '60-70 Years': 0,
-            '70-80 Years': 0,
-            '80-90 Years': 0,
-            '90+ Years': 0
-        };
-
-        try {
-            // Get comprehensive total pensioners from ALL tables
-            // const queries = [
-            //     // PSA aggregated data
-            //     "SELECT COALESCE(SUM(total_pensioners), 0) as total FROM psa_pensioner_data",
-            //     // Bank aggregated data  
-            //     "SELECT COALESCE(SUM(grand_total), 0) as total FROM bank_pensioner_data",
-            //     // Individual record tables
-            //     "SELECT COUNT(*) as total FROM doppw_pensioner_data",
-            //     "SELECT COUNT(*) as total FROM dot_pensioner_data",
-            //     "SELECT COUNT(*) as total FROM ubi3_pensioner_data",
-            //     "SELECT COUNT(*) as total FROM ubi1_pensioner_data"
-            // ];
-
-            const queries = [
-                // PSA aggregated data
-                "SELECT count(*) as total from all_pensioners",
-                // Bank aggregated data  
-                "SELECT 100000",
-                // Individual record tables
-                "SELECT 111111 as total from all_pensioners",
-                "SELECT 111111 as total from all_pensioners",
-                "SELECT 111111 as total from all_pensioners",
-                "SELECT 111111 as total from all_pensioners"
-            ];
-
-            const results = await Promise.all(queries.map(query =>
-                new Promise((resolve) => {
-                    db.get(query, [], (err, row) => {
-                        if (err) {
-                            console.warn(`Query failed: ${query}`, err.message);
-                            resolve(0);
-                        } else {
-                            resolve(row?.total || 0);
-                        }
-                    });
-                })
-            ));
-
-            totalPensioners = results.reduce((sum, count) => sum + count, 0);
-        } catch (err) {
-            console.warn('Dashboard stats: failed to compute total pensioners -', err.message);
+        return{
+            success:true, 
+            summaryStats: summaryStats,
+            ageStats: ageStats
         }
-
-        try {
-            const dt = new Date().toISOString().slice(0, 10);
-            //TODO: test with real data
-            // Get verified today from main verification table
-            const verifiedRow = await dbGet(db, `
-                SELECT COUNT(*) AS count
-                FROM pensioners_live_data
-                WHERE inserted_at = `+ dt)
-            verifiedToday = verifiedRow?.count || 0;
-        } catch (err) {
-            console.warn('Dashboard stats: failed to compute verified today -', err.message);
-        }
-
-        try {
-            // Get comprehensive verification status from main table
-            const statusRow = await dbGet(db, `
-                    SELECT count(*) as verified_count from pensioners_live_data
-            `);
-            totalVerified = statusRow?.verified_count || 0;
-            pendingQueue = totalPensioners - totalVerified;
-        } catch (err) {
-            console.warn('Dashboard stats: failed to compute summary stats -', err.message);
-        }
-
-        try {
-            // Get comprehensive age distribution from all tables with age data
-            const currentYear = new Date().getFullYear();
-            const ageQuery = `
-                SELECT 
-                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) < 60 THEN 1 ELSE 0 END) AS age_under_60,
-                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS age_60_70,
-                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 70 AND 79 THEN 1 ELSE 0 END) AS age_70_80,
-                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 80 AND 89 THEN 1 ELSE 0 END) AS age_80_90,
-                    SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) >= 90 THEN 1 ELSE 0 END) AS age_90_plus
-                FROM all_pensioners 
-                WHERE YOB IS NOT NULL 
-                  AND CAST(YOB AS INTEGER) BETWEEN 1900 AND ${currentYear}
-            `;
-
-            const ageResults = await dbGet(db, ageQuery);
-            ageDistribution['<60 Years'] = ageResults?.age_under_60 || 0;
-            ageDistribution['60-70 Years'] = ageResults?.age_60_70 || 0;
-            ageDistribution['70-80 Years'] = ageResults?.age_70_80 || 0;
-            ageDistribution['80-90 Years'] = ageResults?.age_80_90 || 0;
-            ageDistribution['90+ Years'] = ageResults?.age_90_plus || 0;
-
-
-        } catch (err) {
-            console.warn('Dashboard stats: failed to compute age distribution -', err.message);
-        }
-
-        const totalAgeRecords = Object.values(ageDistribution).reduce((sum, value) => sum + value, 0);
-        const formattedAgeDistribution = Object.entries(ageDistribution).map(([label, count]) => {
-            const percentage = totalAgeRecords > 0 ? (count / totalAgeRecords) * 100 : 0;
-            return {
-                ageGroup: label,
-                count,
-                percentage: Number(percentage.toFixed(2))
-            };
-        });
-
-        // Get DLC vs Manual submission statistics
-        let submissionStats = {
-            totalDLC: 0,
-            totalManual: 0,
-            totalUnknown: 0,
-            dlcPercentage: 0,
-            manualPercentage: 0,
-            breakdown: {
-                DLC: 0,
-                PLC: 0,
-                VLC: 0,
-                unknown: 0
-            }
-        };
-
-        try {
-            submissionTypeQuery = `
-                SELECT pensioner_DLC_type as submission_mode
-                    COUNT(*) as count
-                FROM pensioners_live_data 
-                WHERE pensioner_DLC_type IS NOT NULL 
-                GROUP BY pensioner_DLC_type
-            `
-            const submissionRow = await dbGet(db, submissionTypeQuery);
-            // console.log(submissionTypeQuery)
-            // If single row returned, handle it differently
-            if (submissionRow) {
-                // Single row case - need to get all modes
-                const allSubmissionModes = await new Promise((resolve) => {
-                    db.all(`
-                        SELECT pensioner_DLC_type as submission_mode
-                    COUNT(*) as count
-                FROM pensioners_live_data 
-                WHERE pensioner_DLC_type IS NOT NULL 
-                GROUP BY pensioner_DLC_type
-                    `, [], (err, rows) => {
-                        if (err) {
-                            console.warn('Submission mode query failed:', err.message);
-                            resolve([]);
-                        } else {
-                            resolve(rows || []);
-                        }
-                    });
-                });
-
-                // Process submission modes
-                allSubmissionModes.forEach(row => {
-                    const mode = row.submission_mode;
-                    const count = row.count;
-
-                    if (mode === 'DLC') {
-                        submissionStats.totalDLC += count;
-                        submissionStats.breakdown.DLC = count;
-                    } else if (mode === 'PLC') {
-                        submissionStats.totalManual += count;
-                        submissionStats.breakdown.PLC = count;
-                    } else if (mode === 'VLC') {
-                        submissionStats.totalDLC += count; // VLC is digital
-                        submissionStats.breakdown.VLC = count;
-                    } else {
-                        submissionStats.totalUnknown += count;
-                        submissionStats.breakdown.unknown += count;
-                    }
-                });
-            }
-
-            // Calculate percentages
-            // TODO: check for various DLC types along with video and manual
-            const totalSubmissions = submissionStats.totalDLC + submissionStats.totalManual + submissionStats.totalUnknown;
-            if (totalSubmissions > 0) {
-                submissionStats.dlcPercentage = Number(((submissionStats.totalDLC / totalSubmissions) * 100).toFixed(1));
-                submissionStats.manualPercentage = Number(((submissionStats.totalManual / totalSubmissions) * 100).toFixed(1));
-            }
-
-        } catch (err) {
-            console.warn('Dashboard stats: failed to compute submission statistics -', err.message);
-        }
-
-        return {
-            totalPensioners,
-            verifiedToday,
-            pendingQueue,
-            summary: {
-                total: totalPensioners,
-                verified: totalVerified,
-                pending: pendingQueue,
-                verificationRate: totalVerified > 0 && totalPensioners > 0 ? Number(((totalVerified / totalPensioners) * 100).toFixed(2)) : 0
-            },
-            ageDistribution: formattedAgeDistribution,
-            submissionStats: submissionStats
-        };
-    } finally {
+    
+    } 
+    catch(err) {
+        console.log("Could not fetch dashboard statistics: ", err);
+    }
+    finally {
         closeDb();
     }
 }
@@ -833,38 +722,17 @@ app.get('//health', (req, res) => {
 
 
 // Public dashboard statistics endpoint (for testing)
-app.get('/api/dashboard/public-stats', async (req, res) => {
+app.post('/api/dashboard/public-stats', async (req, res) => {
+    console.log("In here");
     try {
+        const data = req.body; // Access data from the request body
+        console.log(data);
         const stats = await getDashboardStats();
         res.status(200).json({
             success: true,
-            totalPensioners: stats.totalPensioners,
-            verifiedToday: stats.verifiedToday,
-            pendingQueue: stats.pendingQueue,
-            summary: {
-                total: stats.summary.total,
-                verified: stats.summary.verified,
-                pending: stats.summary.pending,
-                verificationRate: stats.summary.verificationRate
-            },
-            ageDistribution: stats.ageDistribution,
-            submissionStats: {
-                totalDLC: stats.submissionStats.totalDLC,
-                totalManual: stats.submissionStats.totalManual,
-                totalUnknown: stats.submissionStats.totalUnknown,
-                dlcPercentage: stats.submissionStats.dlcPercentage,
-                manualPercentage: stats.submissionStats.manualPercentage,
-                breakdown: {
-                    DLC: stats.submissionStats.breakdown.DLC,
-                    PLC: stats.submissionStats.breakdown.PLC,
-                    VLC: stats.submissionStats.breakdown.VLC,
-                    unknown: stats.submissionStats.breakdown.unknown
-                }
-            },
-            tableBreakdown: stats.tableBreakdown
+            ...stats
         });
     } catch (error) {
-        console.error('Error in /api/dashboard/public-stats:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to fetch dashboard statistics'
@@ -880,9 +748,10 @@ app.options('/api/dashboard/stats', (req, res) => {
     res.sendStatus(200);
 });
 
-app.get('/api/top-states', async (req, res) => {
+app.post('/api/top-states', async (req, res) => {
     try {
-        const limit = req.query.limit
+        const limit = req.body.limit;
+        const filters = req.body.filters;
         const topStates = await getTopStates(limit);
         res.status(200).json({
             success: true,
@@ -5223,8 +5092,10 @@ app.get('/api/bank-analysis', async (req, res) => {
 });
 
 // Top Banks API - Get banks with highest verification counts
-app.get('/api/top-banks', async (req, res) => {
-    const { limit = 10 } = req.query;
+app.post('/api/top-banks', async (req, res) => {
+    
+    const limit = req.body.limit ? parseInt(req.body.limit) : null;
+    const filters = req.body.filters;
 
     let query = `select Bank_name, 
     count(*) as all_pensioner_count, 
@@ -6450,6 +6321,7 @@ from all_pensioners where bank_name is Not null and bank_name != 'null' GROUP by
 const pincodeApiRouter = require('./pincode-api');
 const { cache } = require('react');
 const { isNullOrUndefined } = require('util');
+const constants = require('constants');
 app.use('/api/pincode', pincodeApiRouter);
 
 const _addLimitClauseIfNeeded = (query, limit) => {
@@ -6522,9 +6394,10 @@ async function getTopCentralPensionerSubtypeCounts(limit) {
 }
 
 // Top PSA Categories API endpoint
-app.get('/api/top-psas', async (req, res) => {
+app.post('/api/top-psas', async (req, res) => {
     try {
-        const limit = req.query.limit || null;
+        const limit = req.body.limit || null;
+        const filters = req.body.filters || {};
         const topPSA = await getTopPSA(limit);
 
 
@@ -6545,9 +6418,9 @@ app.get('/api/top-psas', async (req, res) => {
     }
 });
 
-app.get('/api/top-central-pensioner-subtypes', async (req, res) => {
+app.post('/api/top-central-pensioner-subtypes', async (req, res) => {
     try {
-        const limit = req.query.limit
+        const limit = req.body.limit;
         const data = await getTopCentralPensionerSubtypeCounts(limit);
         res.status(200).json({
             success: true,

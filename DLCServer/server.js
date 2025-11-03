@@ -470,10 +470,12 @@ app.post('/api/top-states', async (req, res) => {
 
 
 // Authentication Methods Analysis Function
-async function getAuthenticationMethodsAnalysis() {
+async function getAuthenticationMethodsAnalysis(filters) {
+    console.log("getAuthenticationMethodsAnalysis called with filters:", filters);
     const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    console.log("Fetching authentication methods for: ", filters)
 
-    const closeDb = () => {
+    const _closeDb = () => {
         db.close(err => {
             if (err) {
                 console.warn('Warning: failed to close database connection', err.message);
@@ -483,94 +485,66 @@ async function getAuthenticationMethodsAnalysis() {
 
     try {
         // Get authentication methods data from submission_mode column
-        const authMethodsData = await new Promise((resolve, reject) => {
-            const query = `
-                SELECT 
-                    submission_mode,
-                    COUNT(*) as total_count,
-                    SUM(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 ELSE 0 END) as success_count,
-                    SUM(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 ELSE 0 END) as failed_count
-                FROM doppw_pensioner_data
-                WHERE submission_mode IS NOT NULL AND submission_mode != 'nan'
-                GROUP BY submission_mode
-                ORDER BY total_count DESC
-            `;
-            //TODO: SSR - check with NS about the column name for this verification.
-            //TODO: SSR - simplify the overall method and add filters
-
-            db.all(query, [], (err, rows) => {
+        const { whereClause, params } = buildWhereClauseFromFilters(filters);
+        console.log(whereClause, params);
+        const query = `SELECT 
+                            CASE 
+                                WHEN LOWER(TRIM(pensioner_DLC_type)) IN ('p', 'f', 'i') THEN LOWER(TRIM(pensioner_DLC_type))
+                                ELSE 'other'
+                            END AS pensioner_DLC_type,
+                            COUNT(*) AS count
+                            FROM all_pensioners
+                            WHERE lc_date IS NOT NULL 
+                            AND TRIM(lc_date) != '' ${whereClause}
+                            GROUP BY 
+                            CASE 
+                                WHEN LOWER(TRIM(pensioner_DLC_type)) IN ('p', 'f', 'i') THEN LOWER(TRIM(pensioner_DLC_type))
+                                ELSE 'other'
+                            END
+                            ORDER BY count DESC;`
+        const rows = await new Promise((resolve, reject) => {
+            db.all(query, params, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows || []);
+                    resolve(rows);
                 }
             });
         });
 
-        // Map submission modes to user-friendly names
-        const methodMapping = {
-            'DLC': 'Digital',
-            'PLC': 'Physical',
-            'VLC': 'Video',
-            'IRIS': 'IRIS',
-            'FINGERPRINT': 'Fingerprint',
-            'FACE': 'Face Auth'
-        };
+        console.log(JSON.stringify(rows));
 
-        // Process and format the data
-        const formattedMethods = {};
-
-        // Initialize all methods with 0
-        Object.values(methodMapping).forEach(method => {
-            formattedMethods[method] = {
-                total: 0,
-                success: 0,
-                failed: 0,
-                successRate: 0
+        const auth_methods = { "face": 0, "iris": 0, "fingerprint": 0, "other": 0 };
+        rows.forEach(row => {
+            const _methodMapping = {
+                'i': 'iris',
+                'f': 'face',
+                'p': 'fingerprint',
+                'other': 'other'
             };
+            const methodName = _methodMapping[row.pensioner_DLC_type.toLowerCase()] || "other";
+            auth_methods[methodName] = row.count;
         });
+        return auth_methods;
 
-        // Fill in actual data
-        authMethodsData.forEach(row => {
-            const methodName = methodMapping[row.submission_mode] || row.submission_mode;
-            const successRate = row.total_count > 0 ? ((row.success_count / row.total_count) * 100).toFixed(2) : 0;
-
-            formattedMethods[methodName] = {
-                total: row.total_count,
-                success: row.success_count,
-                failed: row.failed_count,
-                successRate: parseFloat(successRate)
-            };
-        });
-
-        // Calculate totals
-        const totalRecords = Object.values(formattedMethods).reduce((sum, method) => sum + method.total, 0);
-        const totalSuccess = Object.values(formattedMethods).reduce((sum, method) => sum + method.success, 0);
-        const overallSuccessRate = totalRecords > 0 ? ((totalSuccess / totalRecords) * 100).toFixed(2) : 0;
-
-        return {
-            authenticationMethods: formattedMethods,
-            summary: {
-                totalRecords,
-                totalSuccess,
-                totalFailed: totalRecords - totalSuccess,
-                overallSuccessRate: parseFloat(overallSuccessRate)
-            },
-            dataSource: 'doppw_pensioner_data'
-        };
-    } finally {
-        closeDb();
+    } catch (err) {
+        console.error('Error fetching authentication methods analysis:', err, filters);
+    }
+    finally {
+        _closeDb();
     }
 }
 
 // Public API endpoint for authentication methods analysis
-app.get('/api/dashboard/authentication-methods', async (req, res) => {
+// TODO: SSR
+app.post('/api/dashboard/authentication-methods', async (req, res) => {
     try {
-        const authData = await getAuthenticationMethodsAnalysis();
+        const filters = req.query.filters || {};
+        console.log("Received request for /api/dashboard/authentication-methods with filters:", filters);
+        const authData = await getAuthenticationMethodsAnalysis(filters);
+        console.log("Fetched data for authentication methods", authData);
         res.status(200).json({
-            success: true,
-            ...authData,
-            timestamp: new Date().toISOString()
+            data: authData
         });
     } catch (error) {
         console.error('Error in /api/dashboard/authentication-methods:', error);
@@ -584,7 +558,7 @@ app.get('/api/dashboard/authentication-methods', async (req, res) => {
 // Protected authentication methods endpoint
 app.get('/api/dashboard/auth-methods', authenticateToken, async (req, res) => {
     try {
-        const authData = await getAuthenticationMethodsAnalysis();
+        const authData = await getAuthenticationMethodsAnalysis(req.query.filters || {});
         res.status(200).json({
             success: true,
             ...authData,
@@ -1423,7 +1397,7 @@ app.get('/api/geography/quick-summary/:stateName', async (req, res) => {
 // Endpoint to get certificate analysis data (updated to use authentication methods)
 app.get('/api/dashboard/certificate-analysis', async (req, res) => {
     try {
-        const authData = await getAuthenticationMethodsAnalysis();
+        const authData = await getAuthenticationMethodsAnalysis(req.query.filters);
         const methods = authData.authenticationMethods;
 
         // Format for certificate analysis response
@@ -3097,276 +3071,6 @@ app.get('/api/dashboard/protected-stats', authenticateToken, async (req, res) =>
         res.status(500).json({
             success: false,
             message: 'Failed to fetch dashboard statistics'
-        });
-    }
-});
-
-// New API endpoint for state-wise district/city pensioner counts from ALL tables
-app.get('/api/proxy/advanced/cross-tabulation/bank_name/PSA', async (req, res) => {
-    try {
-        const { state, limit = 25 } = req.query;
-
-        if (!state) {
-            return res.status(400).json({
-                success: false,
-                error: 'State parameter is required'
-            });
-        }
-
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
-
-        const closeDb = () => {
-            db.close(err => {
-                if (err) {
-                    console.warn('Warning: failed to close database connection', err.message);
-                }
-            });
-        };
-
-        try {
-            // Get district/city-wise data from ALL tables
-            const allDistrictData = await new Promise((resolve, reject) => {
-                const query = `
-                    -- Data from doppw_pensioner_data (main verification table)
-                    SELECT 
-                        pensioner_district as district_city,
-                        pensioner_state as state,
-                        COUNT(*) as total_pensioners,
-                        SUM(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 ELSE 0 END) as verified_pensioners,
-                        SUM(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 ELSE 0 END) as pending_pensioners,
-                        'doppw_pensioner_data' as source_table
-                    FROM doppw_pensioner_data
-                    WHERE UPPER(pensioner_state) = UPPER(?) 
-                        AND pensioner_district IS NOT NULL 
-                        AND pensioner_district != 'nan' 
-                        AND pensioner_district != ''
-                    GROUP BY pensioner_district, pensioner_state
-                    
-                    UNION ALL
-                    
-                    -- Data from bank_pensioner_data (bank city data)
-                    SELECT 
-                        bank_city as district_city,
-                        bank_state as state,
-                        SUM(grand_total) as total_pensioners,
-                        0 as verified_pensioners,
-                        0 as pending_pensioners,
-                        'bank_pensioner_data' as source_table
-                    FROM bank_pensioner_data
-                    WHERE UPPER(bank_state) = UPPER(?) 
-                        AND bank_city IS NOT NULL 
-                        AND bank_city != 'nan' 
-                        AND bank_city != ''
-                        AND grand_total > 0
-                    GROUP BY bank_city, bank_state
-                    
-                    UNION ALL
-                    
-                    -- Data from ubi1_pensioner_data (pensioner city data)
-                    SELECT 
-                        pensioner_city as district_city,
-                        pensioner_state as state,
-                        COUNT(*) as total_pensioners,
-                        0 as verified_pensioners,
-                        0 as pending_pensioners,
-                        'ubi1_pensioner_data' as source_table
-                    FROM ubi1_pensioner_data
-                    WHERE UPPER(pensioner_state) = UPPER(?) 
-                        AND pensioner_city IS NOT NULL 
-                        AND pensioner_city != 'nan' 
-                        AND pensioner_city != ''
-                    GROUP BY pensioner_city, pensioner_state
-                    
-                    UNION ALL
-                    
-                    -- Data from ubi3_pensioner_data (pensioner city data)
-                    SELECT 
-                        pensioner_city as district_city,
-                        pensioner_state as state,
-                        COUNT(*) as total_pensioners,
-                        0 as verified_pensioners,
-                        0 as pending_pensioners,
-                        'ubi3_pensioner_data' as source_table
-                    FROM ubi3_pensioner_data
-                    WHERE UPPER(pensioner_state) = UPPER(?) 
-                        AND pensioner_city IS NOT NULL 
-                        AND pensioner_city != 'nan' 
-                        AND pensioner_city != ''
-                    GROUP BY pensioner_city, pensioner_state
-                    
-                    UNION ALL
-                    
-                    -- Data from psa_pensioner_data (district level data)
-                    SELECT 
-                        location_name as district_city,
-                        ? as state,
-                        total_pensioners as total_pensioners,
-                        manual_lc_submitted as verified_pensioners,
-                        (total_pensioners - manual_lc_submitted) as pending_pensioners,
-                        'psa_pensioner_data' as source_table
-                    FROM psa_pensioner_data
-                    WHERE data_type = 'district' 
-                        AND location_name IS NOT NULL 
-                        AND location_name != 'nan' 
-                        AND location_name != ''
-                        AND total_pensioners > 0
-                `;
-
-                db.all(query, [state, state, state, state, state.toUpperCase()], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        // Combine data from multiple tables for same districts/cities
-                        const districtMap = new Map();
-
-                        rows.forEach(row => {
-                            const key = row.district_city.toUpperCase().trim();
-                            if (districtMap.has(key)) {
-                                const existing = districtMap.get(key);
-                                existing.total_pensioners += row.total_pensioners || 0;
-                                existing.verified_pensioners += row.verified_pensioners || 0;
-                                existing.pending_pensioners += row.pending_pensioners || 0;
-                                existing.source_tables.push(row.source_table);
-                            } else {
-                                districtMap.set(key, {
-                                    district_city: row.district_city,
-                                    state: row.state,
-                                    total_pensioners: row.total_pensioners || 0,
-                                    verified_pensioners: row.verified_pensioners || 0,
-                                    pending_pensioners: row.pending_pensioners || 0,
-                                    source_tables: [row.source_table]
-                                });
-                            }
-                        });
-
-                        // Convert map to array and calculate percentages
-                        const combinedData = Array.from(districtMap.values()).map(district => {
-                            const completionPercentage = district.total_pensioners > 0 ?
-                                ((district.verified_pensioners / district.total_pensioners) * 100).toFixed(2) : 0;
-                            return {
-                                district_city: district.district_city,
-                                state: district.state,
-                                total_pensioners: district.total_pensioners,
-                                verified_pensioners: district.verified_pensioners,
-                                pending_pensioners: district.pending_pensioners,
-                                completion_percentage: parseFloat(completionPercentage),
-                                data_sources: district.source_tables
-                            };
-                        });
-
-                        // Sort by total pensioners descending and apply limit
-                        combinedData.sort((a, b) => b.total_pensioners - a.total_pensioners);
-
-                        resolve(combinedData.slice(0, parseInt(limit)));
-                    }
-                });
-            });
-
-            // Get overall state summary from all tables
-            const stateSummary = await new Promise((resolve, reject) => {
-                const summaryQuery = `
-                    SELECT 
-                        SUM(total_pensioners) as total_pensioners,
-                        SUM(verified_pensioners) as verified_pensioners,
-                        SUM(pending_pensioners) as pending_pensioners,
-                        COUNT(*) as total_locations
-                    FROM (
-                        -- Summary from doppw_pensioner_data
-                        SELECT 
-                            COUNT(*) as total_pensioners,
-                            SUM(CASE WHEN submitted_status IS NOT NULL AND UPPER(submitted_status) IN ('VERIFIED', 'SUBMITTED') THEN 1 ELSE 0 END) as verified_pensioners,
-                            SUM(CASE WHEN submitted_status IS NULL OR UPPER(submitted_status) NOT IN ('VERIFIED', 'SUBMITTED', 'WAIVED') THEN 1 ELSE 0 END) as pending_pensioners
-                        FROM doppw_pensioner_data
-                        WHERE UPPER(pensioner_state) = UPPER(?)
-                        
-                        UNION ALL
-                        
-                        -- Summary from bank_pensioner_data
-                        SELECT 
-                            SUM(grand_total) as total_pensioners,
-                            0 as verified_pensioners,
-                            0 as pending_pensioners
-                        FROM bank_pensioner_data
-                        WHERE UPPER(bank_state) = UPPER(?) AND grand_total > 0
-                        
-                        UNION ALL
-                        
-                        -- Summary from ubi1_pensioner_data
-                        SELECT 
-                            COUNT(*) as total_pensioners,
-                            0 as verified_pensioners,
-                            0 as pending_pensioners
-                        FROM ubi1_pensioner_data
-                        WHERE UPPER(pensioner_state) = UPPER(?)
-                        
-                        UNION ALL
-                        
-                        -- Summary from ubi3_pensioner_data
-                        SELECT 
-                            COUNT(*) as total_pensioners,
-                            0 as verified_pensioners,
-                            0 as pending_pensioners
-                        FROM ubi3_pensioner_data
-                        WHERE UPPER(pensioner_state) = UPPER(?)
-                        
-                        UNION ALL
-                        
-                        -- Summary from psa_pensioner_data
-                        SELECT 
-                            SUM(total_pensioners) as total_pensioners,
-                            SUM(manual_lc_submitted) as verified_pensioners,
-                            SUM(total_pensioners - manual_lc_submitted) as pending_pensioners
-                        FROM psa_pensioner_data
-                        WHERE data_type = 'district' AND total_pensioners > 0
-                    )
-                `;
-
-                db.get(summaryQuery, [state, state, state, state], (err, row) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        const completionPercentage = row.total_pensioners > 0 ?
-                            ((row.verified_pensioners / row.total_pensioners) * 100).toFixed(2) : 0;
-                        resolve({
-                            state: state.toUpperCase(),
-                            total_pensioners: row.total_pensioners || 0,
-                            verified_pensioners: row.verified_pensioners || 0,
-                            pending_pensioners: row.pending_pensioners || 0,
-                            total_locations: allDistrictData.length,
-                            completion_percentage: parseFloat(completionPercentage)
-                        });
-                    }
-                });
-            });
-
-            res.status(200).json({
-                success: true,
-                query_parameters: {
-                    state: state.toUpperCase(),
-                    limit: parseInt(limit)
-                },
-                state_summary: stateSummary,
-                district_city_wise_data: allDistrictData,
-                total_records_returned: allDistrictData.length,
-                data_sources: [
-                    'doppw_pensioner_data (main verification table)',
-                    'bank_pensioner_data (bank city wise)',
-                    'ubi1_pensioner_data (pensioner city wise)',
-                    'ubi3_pensioner_data (pensioner city wise)',
-                    'psa_pensioner_data (district wise)'
-                ],
-                message: `District/City-wise pensioner data for ${state.toUpperCase()} state from all database tables`
-            });
-
-        } finally {
-            closeDb();
-        }
-    } catch (error) {
-        console.error('Error in /api/proxy/advanced/cross-tabulation/bank_name/PSA:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch district-wise pensioner data from all tables',
-            details: error.message
         });
     }
 });
@@ -5371,15 +5075,15 @@ app.listen(PORT, HOST, () => {
 });
 
 module.exports = {
-    generateDynamicKey,
-    encryptPayload,
-    decryptPayload,
-    encryptAESKeyWithRSAPublicKey,
-    decryptAESKeyWithRSAPrivateKey,
-    createDigitalSignature,
-    verifyDigitalSignature,
-    processIncomingRequest,
-    prepareOutgoingRequest,
+    // generateDynamicKey,
+    // encryptPayload,
+    // decryptPayload,
+    // encryptAESKeyWithRSAPublicKey,
+    // decryptAESKeyWithRSAPrivateKey,
+    // createDigitalSignature,
+    // verifyDigitalSignature,
+    // processIncomingRequest,
+    // prepareOutgoingRequest,
     getDashboardStats
 };
 
@@ -5474,6 +5178,7 @@ const pincodeApiRouter = require('./pincode-api');
 const { cache } = require('react');
 const { isNullOrUndefined } = require('util');
 const constants = require('constants');
+const { Console } = require('console');
 app.use('/api/pincode', pincodeApiRouter);
 
 const _addLimitClauseIfNeeded = (query, limit) => {
@@ -5518,9 +5223,9 @@ async function getTopCentralPensionerSubtypeCounts(filters, limit) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
         const { whereClause, params } = buildWhereClauseFromFilters(filters);
-        const whereClauseCorrected = (whereClause && whereClause.trim().length > 0)?
-                    whereClause.replace("WHERE", "AND") : "";
-        
+        const whereClauseCorrected = (whereClause && whereClause.trim().length > 0) ?
+            whereClause.replace("WHERE", "AND") : "";
+
         let query = `
                     SELECT
                         pensioner_subtype,COUNT(*) AS all_pensioner_count,

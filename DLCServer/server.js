@@ -537,7 +537,6 @@ app.post('/api/dashboard/authentication-methods', async (req, res) => {
         const filters = req.query.filters || {};
         console.log("Received request for /api/dashboard/authentication-methods with filters:", filters);
         const authData = await getAuthenticationMethodsAnalysis(filters);
-        console.log("Fetched data for authentication methods", authData);
         res.status(200).json({
             data: authData
         });
@@ -955,9 +954,8 @@ async function fetchGeoStatistics(level, name, filters) {
     ${whereClause}
     GROUP BY ${levelColumn};
   `;
-    console.log("[geo-stats] SQL:", query);
-    console.log("[geo-stats] Params:", params);
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    
+  const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
     const closeDb = () => {
         db.close(err => {
             if (err) {

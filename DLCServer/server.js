@@ -946,8 +946,8 @@ async function fetchGeoStatistics(level, name, filters) {
         SUM(CASE WHEN lc_date IS NULL THEN 1 ELSE 0 END) AS dlc_pending,
         SUM(
             CASE
-                WHEN lc_date IS NULL AND last_year_lc_type = 'PLC'
-                THEN 1 ELSE 0
+                WHEN lc_date IS NULL AND last_year_lc_type = 'DLC'
+                THEN 0 ELSE 1
             END
         ) AS conversion_potential
     FROM all_pensioners_fixed_pincode

@@ -4,7 +4,7 @@ const MYSQL_CONFIG = {
   host: '127.0.0.1',
   port: 3306,
   user: 'nsrivast',
-  password: 'ns#601',
+  password: 'password',
   database: 'doppw',
   multipleStatements: true,
   charset: 'utf8mb4'

@@ -4,27 +4,35 @@ const crypto = require('crypto');
 const forge = require('node-forge');
 const fs = require('fs');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const multer = require('multer');
+const { database } = require('../config/database');
 const { getStateGeographicAnalysis, getAllAvailableStates } = require('./geographic-analysis-api');
 const geographicRoutes = require('./routes/geographic-routes');
 
 const app = express();
 const PORT = process.env.PORT || 9007;
 const HOST = 'localhost';
-// const DB_PATH = path.join(__dirname, 'database.db');
-//TODO: changes
-const DB_PATH = path.join("..", 'updated_db/updated_db.db');
-
-
 
 // JWT Secret (in production, use environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'dlc-portal-jwt-secret-key-2025-secure';
 
-// Global database connection for tracking
-const globalDb = new sqlite3.Database(DB_PATH);
+function getDbConnection() {
+    const dbInstance = database.getDB();
+    return {
+        all: dbInstance.all.bind(dbInstance),
+        get: dbInstance.get.bind(dbInstance),
+        run: dbInstance.run.bind(dbInstance),
+        each: dbInstance.each.bind(dbInstance),
+        prepare: dbInstance.prepare.bind(dbInstance),
+        close: (callback) => {
+            if (callback) {
+                callback();
+            }
+        }
+    };
+}
 
 // Helper function to format file size
 function formatFileSize(bytes) {
@@ -99,7 +107,7 @@ function dbGet(db, sql, params = []) {
     });
 }
 
-function buildWhereClauseFromFilters(filters) {
+function buildWhereClauseFromFilters(filters = {}) {
     const whereParts = [];
     const params = [];
 
@@ -193,8 +201,8 @@ function buildWhereClauseFromFilters(filters) {
 }
 
 
-async function getDashboardStats(filters) {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+async function getDashboardStats(filters = {}) {
+    const db = getDbConnection();
     const summaryStats = {
         total_pensioners: null,
         dlc_done: null,
@@ -214,17 +222,6 @@ async function getDashboardStats(filters) {
     };
 
     const currentYear = new Date().getFullYear();
-    const _unfilteredAgeQuery = `
-            SELECT 
-                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) < 60 THEN 1 ELSE 0 END) AS age_under_60,
-                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS age_60_70,
-                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 70 AND 79 THEN 1 ELSE 0 END) AS age_70_80,
-                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) BETWEEN 80 AND 89 THEN 1 ELSE 0 END) AS age_80_90,
-                SUM(CASE WHEN ${currentYear} - CAST(YOB AS INTEGER) >= 90 THEN 1 ELSE 0 END) AS age_90_plus
-            FROM all_pensioners 
-            WHERE YOB IS NOT NULL 
-                AND CAST(YOB AS INTEGER) BETWEEN 1900 AND ${currentYear}
-                `;
 
     const today = new Date();
     const yesterdaydt = new Date(today); // Create a copy to avoid modifying 'today'
@@ -232,22 +229,37 @@ async function getDashboardStats(filters) {
     const yesterday = yesterdaydt.toISOString().split('T')[0]
 
     const { whereClause, params } = buildWhereClauseFromFilters(filters);
-    const _ageWiseBreakdownQuery = (whereClause && whereClause.trim().length > 0) ?
-        `${_unfilteredAgeQuery} AND (${whereClause.replace('WHERE', '')})`
-        : _unfilteredAgeQuery;
+    const filterWithoutWhere = whereClause ? whereClause.replace(/^WHERE\s+/i, '') : '';
+    const ageFilterClause = filterWithoutWhere ? `AND (${filterWithoutWhere})` : '';
+    const _ageWiseBreakdownQuery = `
+            SELECT 
+                SUM(CASE WHEN ${currentYear} - year_val < 60 THEN 1 ELSE 0 END) AS age_under_60,
+                SUM(CASE WHEN ${currentYear} - year_val BETWEEN 60 AND 69 THEN 1 ELSE 0 END) AS age_60_70,
+                SUM(CASE WHEN ${currentYear} - year_val BETWEEN 70 AND 79 THEN 1 ELSE 0 END) AS age_70_80,
+                SUM(CASE WHEN ${currentYear} - year_val BETWEEN 80 AND 89 THEN 1 ELSE 0 END) AS age_80_90,
+                SUM(CASE WHEN ${currentYear} - year_val >= 90 THEN 1 ELSE 0 END) AS age_90_plus
+            FROM (
+                SELECT CAST(TRIM(YOB) AS UNSIGNED) AS year_val
+                FROM all_pensioners 
+                WHERE YOB IS NOT NULL 
+                    AND TRIM(YOB) REGEXP '^[0-9]{4}$'
+                    AND CAST(TRIM(YOB) AS UNSIGNED) BETWEEN 1900 AND ${currentYear}
+                    ${ageFilterClause}
+            ) AS ages
+                `;
 
     const _summaryStatsQuery = ` 
             WITH cte_all_pensioners_with_dlc_done_flag AS (
                 SELECT *, 
-                    CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != '' THEN 1 ELSE 0 END AS DLC_DONE
+                    CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) != '' THEN 1 ELSE 0 END AS dlc_done_flag
                 FROM all_pensioners
             )
             SELECT
                 COUNT(*) AS total_pensioners,
-                SUM(dlc_done) AS dlc_done,
+                SUM(dlc_done_flag) AS dlc_done,
                 SUM(CASE WHEN LC_date IS NOT NULL AND LTRIM(RTRIM(LC_date)) = '${yesterday}' THEN 1 ELSE 0 END) AS dlc_done_yesterday,
-                COUNT(*) - SUM(dlc_done) AS dlc_pending,
-                dlc_done*1.0 / COUNT(*) * 100.0 AS dlc_completion_ratio
+                COUNT(*) - SUM(dlc_done_flag) AS dlc_pending,
+                (SUM(dlc_done_flag) * 100.0 / COUNT(*)) AS dlc_completion_ratio
             FROM  cte_all_pensioners_with_dlc_done_flag ${whereClause}`;
 
 
@@ -271,20 +283,21 @@ async function getDashboardStats(filters) {
 
         summaryStats.total_pensioners = statsRow?.total_pensioners || 0;
         summaryStats.dlc_done = statsRow?.dlc_done || 0;
+        summaryStats.dlc_percentage = Math.round(10000*summaryStats.dlc_done/summaryStats.total_pensioners)/100 || 0.00;
         summaryStats.dlc_pending = statsRow?.dlc_pending || 0;
         summaryStats.dlc_completion_ratio = statsRow?.dlc_completion_ratio || 0;
         summaryStats.dlc_done_yesterday = statsRow?.dlc_done_yesterday || 0;
         summaryStats.data_accuracy = statsRow?.data_accuracy || "Coming soon";
 
         return {
-            success: true,
-            summaryStats: summaryStats,
-            ageStats: ageStats
-        }
+            summaryStats,
+            ageStats
+        };
 
     }
     catch (err) {
         console.log("Could not fetch dashboard statistics: ", err);
+        throw err;
     }
     finally {
         closeDb();
@@ -293,7 +306,7 @@ async function getDashboardStats(filters) {
 
 
 async function getTopStates(limit) {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    const db = getDbConnection();
 
     const closeDb = () => {
         db.close(err => {
@@ -350,7 +363,7 @@ async function getTopStates(limit) {
 }
 
 async function getStateWisePensionerStats() {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    const db = getDbConnection();
 
     const closeDb = () => {
         db.close(err => {
@@ -432,8 +445,8 @@ const authenticateToken = (req, res, next) => {
 // Dashboard top cards, and age-wise statistics on the right.
 app.post('/api/dashboard/public-stats', async (req, res) => {
     try {
-        const data = req.body; // Access data from the request body
-        const stats = await getDashboardStats(data.filters);
+        const filters = req.body?.filters || {};
+        const stats = await getDashboardStats(filters);
         res.status(200).json({
             success: true,
             ...stats
@@ -471,7 +484,7 @@ app.post('/api/top-states', async (req, res) => {
 
 // Authentication Methods Analysis Function
 async function getAuthenticationMethodsAnalysis(filters) {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    const db = getDbConnection();
 
     const _closeDb = () => {
         db.close(err => {
@@ -569,7 +582,7 @@ app.get('/api/dashboard/auth-methods', authenticateToken, async (req, res) => {
 
 // Advanced Certificate & Authentication Analysis with Filtering
 async function getAdvancedCertificateAnalysis(filters = {}) {
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    const db = getDbConnection();
 
     const closeDb = () => {
         db.close(err => {
@@ -834,7 +847,7 @@ app.get('/api/dashboard/advanced-certificate-analysis', async (req, res) => {
 // Get available filter options for certificate analysis
 app.get('/api/dashboard/certificate-filter-options', async (req, res) => {
     try {
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+        const db = getDbConnection();
 
         const closeDb = () => {
             db.close(err => {
@@ -955,7 +968,7 @@ async function fetchGeoStatistics(level, name, filters) {
     GROUP BY ${levelColumn};
   `;
     
-  const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+  const db = getDbConnection();
     const closeDb = () => {
         db.close(err => {
             if (err) {
@@ -1034,7 +1047,7 @@ app.post('/api/auth/login', async (req, res) => {
         console.log(`Login attempt for user: ${username}`);
 
         // Use local database authentication first
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+        const db = getDbConnection();
 
         const query = `SELECT id, username, password, role FROM users WHERE username = ?`;
         db.get(query, [username], (err, row) => {
@@ -1162,7 +1175,7 @@ app.post('/api/top-banks', async (req, res) => {
     order by completion_ratio desc, all_pensioner_count desc
     ${_limitClauseFromLimit}`;
 
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    const db = getDbConnection();
 
     const closeDb = () => {
         db.close(err => {
@@ -1279,7 +1292,7 @@ app.get('/api/choropleth/top-banks-analysis', async (req, res) => {
         include_branches = 'false'  // include branch details
     } = req.query;
 
-    const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+    const db = getDbConnection();
 
     const closeDb = () => {
         db.close(err => {
@@ -1334,7 +1347,7 @@ from all_pensioners where bank_name is Not null and bank_name != 'null' GROUP by
 
 // Import pincode API routes
 const pincodeApiRouter = require('./pincode-api');
-const { cache } = require('react');
+// const { cache } = require('react');
 const { isNullOrUndefined } = require('util');
 const constants = require('constants');
 const { Console } = require('console');
@@ -1364,7 +1377,7 @@ async function getTopPSA(filters, limit) {
 
     return new Promise((resolve, reject) => {
 
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+        const db = getDbConnection();
 
         db.all(query, params, (err, rows) => {
             db.close();
@@ -1380,7 +1393,7 @@ async function getTopPSA(filters, limit) {
 // Helper: Count distinct central PSA subtype counts
 async function getTopCentralPensionerSubtypeCounts(filters, limit) {
     return new Promise((resolve, reject) => {
-        const db = new sqlite3.Database(DB_PATH, sqlite3.OPEN_READONLY);
+        const db = getDbConnection();
         const { whereClause, params } = buildWhereClauseFromFilters(filters);
         const whereClauseCorrected = (whereClause && whereClause.trim().length > 0) ?
             whereClause.replace("WHERE", "AND") : "";
